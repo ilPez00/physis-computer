@@ -1,0 +1,37 @@
+id: design.circuit-breaker
+kind: design
+title: Circuit breaker
+aliases: circuit breaker, bulkhead, fail fast
+tags: resilience, reliability
+questions:
+  - how do you stop a failing dependency from taking your service down?
+invariant: After a threshold of failures the breaker opens, failing calls immediately without touching the dependency, and half-opens periodically to test recovery.
+answer_30s: A circuit breaker trips after repeated failures so calls fail fast instead of piling up on a dead dependency, then probes with limited traffic to detect recovery.
+answer_2m: |
+  What it protects is not the dependency but your own resources: every waiting
+  call holds a thread, a connection and a task, so a hung dependency exhausts the
+  pool long before it returns errors. Three states with clear behaviour: closed
+  (pass through while failures are below threshold), open (fail immediately for
+  a cooldown), half-open (allow a small number of probes). Pair it with
+  timeouts and bounded concurrency, because a breaker without a timeout still
+  waits; pair it with a degraded response (cached value, partial result,
+  queue-for-later) or the fast failure is just a faster outage. The subtlety
+  interviewers like: the breaker must be per-dependency and ideally
+  per-replica, and the fallback path must not itself depend on the broken thing.
+when_to_use:
+  - calls to third parties, other services with their own failure modes, anything you cannot fix
+avoid_when:
+  - in-process calls, or dependencies whose failure is already cheap to absorb
+failure_modes:
+  - breaker without a timeout, so calls hang before it can trip
+  - a fallback that also calls the failed dependency
+  - one global breaker for all dependencies, so one slow path blocks unrelated ones
+follow_ups:
+  - what does the service return while the breaker is open?
+related:
+  - design.retry-backoff
+  - design.timeouts
+  - design.load-shedding
+  - recipe.resilient-dependent-service
+sources:
+  - https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker

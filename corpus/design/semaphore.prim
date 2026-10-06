@@ -1,0 +1,36 @@
+id: design.semaphore
+kind: design
+title: Semaphore
+aliases: semaphore, permit, concurrency limit
+tags: concurrency, reliability
+questions:
+  - how do you limit concurrency to a shared resource?
+invariant: A semaphore issues a fixed number of permits; acquisition gates entry, release is guaranteed by scope.
+answer_30s: A semaphore caps how many operations use a resource at once, so the limit is enforced where the resource is, not where the requests arrive.
+answer_2m: |
+  Distinguish it from a queue: a queue stores work, a semaphore limits active
+  work. The two compose -- bounded queue upstream, semaphore around the resource
+  -- and that pair is the worker-pool shape. Two patterns worth naming:
+  acquire-then-work, where waiting is acceptable (in-flight limit per dependency),
+  and try-acquire, where a full limit means shedding this request immediately
+  (admission control). The second is the primitive that makes load shedding
+  cheap and explicit instead of a timeout that fires too late.
+when_to_use:
+  - capping concurrent calls to a database, an upstream API, or a thread pool
+avoid_when:
+  - mutual exclusion (a lock) or handing work to another task (a queue)
+minimal_example: |
+  # conceptual: three permits, three concurrent callers, the fourth waits
+  permits = Semaphore(3)
+  with permits.acquire():   # or try_acquire() to shed instead of waiting
+      call_upstream()
+failure_modes:
+  - permits released only on the success path, leaking the limit over time
+  - a limit that is not derived from downstream capacity, so it protects nothing
+related:
+  - rust.tokio-semaphore
+  - design.worker-pool
+  - design.backpressure
+  - design.load-shedding
+sources:
+  - https://docs.rs/tokio/latest/tokio/sync/struct.Semaphore.html

@@ -1,0 +1,24 @@
+id: k8s.service.nodeport
+kind: kubernetes
+title: NodePort service
+aliases: nodeport
+tags: networking, service
+questions:
+  - how do you expose a service outside the cluster cheaply?
+invariant: The service is reachable on a static port on every node IP, in addition to its ClusterIP.
+answer_30s: NodePort opens the same port on every node and forwards to the Service, so any node IP serves as an entry point.
+answer_2m: |
+  NodePort is NodeIP:port -> Service -> endpoints. It requires you to know node
+  IPs and to keep the port in a narrow range (30000-32767 by default), and it
+  exposes the port on all nodes whether or not they run the workload. In
+  practice it appears under a LoadBalancer or replaced by an Ingress; it stays
+  useful as a debugging path when TCP-level access is needed.
+when_to_use:
+  - quick external access in a lab cluster; debugging TCP reachability
+avoid_when:
+  - production HTTP traffic (Ingress/LoadBalancer gives names, TLS and fewer open ports)
+related:
+  - k8s.service.loadbalancer
+  - k8s.ingress
+sources:
+  - https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport

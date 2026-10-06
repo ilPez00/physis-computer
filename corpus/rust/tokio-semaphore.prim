@@ -1,0 +1,50 @@
+id: rust.tokio-semaphore
+kind: rust
+title: tokio::sync::Semaphore
+aliases: semaphore, permit, bound concurrency
+tags: async, concurrency, backpressure
+questions:
+  - how do you limit how many requests or jobs run at once?
+invariant: A Semaphore issues a fixed number of permits; acquiring one gates entry and dropping the guard releases it.
+answer_30s: A Semaphore caps concurrency: acquire a permit before the expensive work, and the RAII guard releases it on completion, error, panic or cancellation.
+answer_2m: |
+  The RAII part is what makes it safe: because the permit releases on drop,
+  cancellation and early-return paths cannot leak a slot -- unlike a manual
+  counter. Two placements: around a resource (bounding database connections,
+  upstream calls, spawned tasks) and around admission (try_acquire for load
+  shedding when the queue is already full). It composes with the bounded-channel
+  pattern: the channel bounds queue depth, the semaphore bounds in-flight work,
+  and together they are the standard worker-pool shape.
+when_to_use:
+  - bounding concurrent outbound calls, worker counts, or spawned task fan-out
+avoid_when:
+  - mutual exclusion (that is a mutex) or queueing (that is a channel)
+minimal_example: |
+  use std::sync::Arc;
+  use tokio::sync::Semaphore;
+
+  let limit = Arc::new(Semaphore::new(16));
+
+  for job in jobs {
+      let permit = Arc::clone(&limit).acquire_owned().await?; // waits at 16
+      tokio::spawn(async move {
+          let _permit = permit; // released on drop, even on panic
+          handle(job).await
+      });
+  }
+
+  // Load shedding instead of queueing:
+  // if let Ok(p) = limit.clone().try_acquire_owned() { /* accept */ }
+failure_modes:
+  - acquiring a permit without holding the guard, so the slot is never released
+  - a limit chosen without measuring downstream capacity, so the bottleneck just moves
+follow_ups:
+  - how do you shed load instead of queueing it?
+related:
+  - rust.bounded-concurrency
+  - rust.tokio-spawn
+  - design.semaphore
+  - design.worker-pool
+  - design.load-shedding
+sources:
+  - https://docs.rs/tokio/latest/tokio/sync/struct.Semaphore.html

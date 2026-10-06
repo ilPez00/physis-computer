@@ -1,0 +1,49 @@
+id: recipe.zero-downtime-deploy
+kind: recipe
+title: Zero-downtime deployment
+aliases: zero downtime deploy, no downtime release, deploy without outage
+question: how would you deploy a new version with no downtime?
+tags: architecture, deployment, availability
+properties:
+  - capacity never below the required floor
+  - traffic only to ready replicas
+  - in-flight work drained, not dropped
+  - schema changes compatible with both versions
+  - a working rollback path
+invariant: Keep serving while the version changes: overlap capacity, gate traffic on readiness, drain on termination, and keep old and new versions compatible during the window.
+answer_30s: A rolling update with maxSurge/maxUnavailable, a readiness probe that reflects real serving ability, graceful shutdown with retries on the client side, and expand/contract migrations so both versions can run.
+flow: |
+  new image + template change
+     |
+  rollout: new ReplicaSet grows, old shrinks (surge/unavailable bounds)
+     |
+  gate: readiness probe -> endpoint list
+     |
+  drain: SIGTERM -> readiness off -> in-flight finish -> exit (grace period)
+     |
+  rollback: kubectl rollout undo (template only; schema must support it)
+compose:
+  - k8s.deployment.rolling-update => the mechanics of replacing the ReplicaSet
+  - k8s.probe.readiness => the gate that keeps broken pods out of rotation
+  - design.graceful-shutdown => the drain protocol on SIGTERM
+  - k8s.resources.requests => surge capacity must fit on the cluster, or the rollout stalls
+  - design.schema-migration => both versions share the schema during the window
+  - design.health-checking => liveness versus readiness split so a blip is not a restart storm
+  - design.timeouts => client retries so the endpoint-update window is invisible
+  - k8s.rollback => a rehearsed plan for the bad case
+  - k8s.events => observing the rollout's own failures (probe, capacity, image)
+  - k8s.hpa => autoscaling interaction with surge capacity
+failure_modes:
+  - no readiness probe, so traffic reaches pods that cannot serve
+  - no drain, so every deploy drops in-flight requests
+  - grace period shorter than the drain, so SIGKILL interrupts writes
+  - incompatible migration, so rollback is a rollback to a broken state
+  - surge capacity the cluster cannot schedule, so the rollout stalls half way
+follow_ups:
+  - the new version fails after 10% of traffic moved -- walk me through recovery
+related:
+  - k8s.deployment.rolling-update
+  - design.graceful-shutdown
+  - design.schema-migration
+sources:
+  - https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#rolling-update-deployment

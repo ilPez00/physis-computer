@@ -1,0 +1,34 @@
+id: k8s.top-resource-usage
+kind: kubernetes
+title: Resource usage (kubectl top)
+aliases: kubectl top, resource usage
+tags: operations, resources, performance
+questions:
+  - how do you see actual CPU and memory usage?
+invariant: `kubectl top` reports live usage from the metrics pipeline, which is separate from the scheduler's view of requests.
+answer_30s: `kubectl top pod|node` shows measured usage, which you compare against declared requests and limits to right-size things.
+answer_2m: |
+  Two mental models to keep apart: the scheduler plans with requests, the
+  autoscaler may scale on usage, and the kernel enforces limits. `top` shows the
+  third-party metrics pipeline (metrics-server) output, so it needs that
+  component installed -- and it is instantaneous, not a history. For capacity
+  and right-sizing questions the honest answer is a time series (Prometheus,
+  container_memory_working_set_bytes, CPU throttling counters), because a
+  point-in-time sample cannot distinguish a leak from a burst. Usage well below
+  requests wastes cluster money; usage above limits produces OOMKills and
+  throttling.
+when_to_use:
+  - right-sizing requests/limits, spotting a leak or an OOMKill candidate
+commands:
+  - kubectl top pod -A => current usage per Pod across the cluster
+  - kubectl top node => node usage vs allocatable capacity
+  - kubectl top pod --containers => per-container breakdown in a multi-container Pod
+failure_modes:
+  - metrics-server missing, so top returns "error: Metrics API not available"
+  - treating one snapshot as capacity planning data
+related:
+  - k8s.resources.requests
+  - k8s.resources.limits
+  - design.observability
+sources:
+  - https://kubernetes.io/docs/reference/kubectl/generated/kubectl_top/

@@ -1,0 +1,35 @@
+id: k8s.logs
+kind: kubernetes
+title: Pod logs
+aliases: kubectl logs, container logs
+tags: operations, diagnostics, observability
+questions:
+  - how do you read logs from a crashing pod?
+  - a service returns 500s — how do you read the failing pods' logs?
+invariant: Container stdout/stderr is captured per container and is lost when the container is deleted unless shipped elsewhere.
+answer_30s: `kubectl logs` reads the captured stdout/stderr; `--previous` reads the crashed container instance, and `-f` follows a live one.
+answer_2m: |
+  Understand what you are reading: one stream per container, per Pod, stored on
+  the node. `-c <container>` for multi-container Pods, `--previous` for the
+  instance that died, `--tail` and `--since` to bound volume. A Pod stuck in
+  CrashLoopBackOff may have no current logs at all -- previous is the one that
+  matters. In production this is the fallback path; the real path is a
+  collection pipeline (Fluent Bit / Vector -> Loki or a managed service), and
+  the interview-worthy point is that logs must outlive the Pod, since the Pod
+  that explains the incident is usually already gone.
+when_to_use:
+  - first look at any application-level failure
+commands:
+  - kubectl logs api-7d9f-abc => what the current container printed
+  - kubectl logs api-7d9f-abc --previous => what the container printed before it crashed
+  - kubectl logs -f deploy/api => follow all replicas of a Deployment while you poke it
+  - kubectl logs -l app=api --tail=200 => bounded multi-Pod read during an incident
+failure_modes:
+  - Pod deleted before logs were shipped, so the evidence is gone
+  - secrets written into logs by request logging
+related:
+  - k8s.exec
+  - design.observability
+  - k8s.debugging-workflow
+sources:
+  - https://kubernetes.io/docs/reference/kubectl/generated/kubectl_logs/

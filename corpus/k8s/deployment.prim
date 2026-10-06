@@ -1,0 +1,52 @@
+id: k8s.deployment
+kind: kubernetes
+title: Deployment
+aliases: deploy, workload controller
+tags: workloads, availability
+questions:
+  - how do you run a stateless service with N replicas?
+invariant: The replica count is declared; the Deployment controller converges Pods to it via ReplicaSets.
+answer_30s: Declare replicas and a Pod template; the Deployment controller keeps exactly that many Pods running and moves between template versions by creating ReplicaSets.
+answer_2m: |
+  A Deployment owns ReplicaSets, and a ReplicaSet owns Pods. Changing the Pod
+  template does not edit Pods: it creates a new ReplicaSet and shifts replicas
+  from the old one to the new one under surge/unavailable bounds. Self-healing
+  is the same loop at rest: a deleted Pod is recreated to match the declared
+  count. It is the default controller for stateless workloads.
+when_to_use:
+  - stateless services
+  - gradual application rollout
+avoid_when:
+  - stable identity per replica is required (use StatefulSet)
+  - every node needs exactly one copy (use DaemonSet)
+commands:
+  - kubectl get deployments -A => which workloads exist and how many are ready
+  - kubectl rollout status deployment/api => is a rollout still in progress or stuck
+  - kubectl describe deployment/api => which ReplicaSet is current and what the strategy is
+minimal_example: |
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata: { name: api }
+  spec:
+    replicas: 3
+    selector: { matchLabels: { app: api } }
+    template:
+      metadata: { labels: { app: api } }
+      spec:
+        containers:
+          - name: api
+            image: api:1.2.3
+            readinessProbe: { httpGet: { path: /healthz, port: 8080 } }
+failure_modes:
+  - selector and template labels do not match
+  - image tag never changes, so no rollout happens
+  - no readiness probe, so broken Pods receive traffic
+follow_ups:
+  - what exactly happens to the old ReplicaSet after a rollout?
+related:
+  - k8s.replica-set
+  - k8s.deployment.rolling-update
+  - k8s.probe.readiness
+  - k8s.hpa
+sources:
+  - https://kubernetes.io/docs/concepts/workloads/controllers/deployment/

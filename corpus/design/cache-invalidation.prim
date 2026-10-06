@@ -1,0 +1,35 @@
+id: design.cache-invalidation
+kind: design
+title: Cache invalidation
+aliases: invalidation, cache coherence, stale data
+tags: caching, reliability
+questions:
+  - how do you invalidate a cache correctly?
+invariant: Every cache entry has a defined lifetime and a defined invalidation trigger; staleness is bounded by configuration, not by hope.
+answer_30s: Invalidate explicitly on writes and always keep a TTL as the backstop, and decide per key whether stale-but-fast is acceptable -- the answer differs for a price and for a session.
+answer_2m: |
+  Three mechanisms, usually all three: TTL (bounds staleness without any
+  coordination), key-versioning (embed a version or content hash in the key, so
+  a schema or format change silently bypasses old entries), and pub/sub
+  invalidation for values that must be refreshed immediately (broadcast the key,
+  each replica drops its local copy). Multi-layer caches compound the problem:
+  CDN, reverse proxy, application cache and database cache each need a story,
+  and purge propagation is the part that actually breaks in production.
+  Versioned cache keys are the most robust modern answer because they make
+  invalidation a deployment concern rather than a runtime race.
+when_to_use:
+  - any cache; the question is which mechanism per key, not whether
+avoid_when:
+  - nothing: a cache without an invalidation plan is a correctness bug waiting for a deploy
+failure_modes:
+  - invalidation on write that races with a concurrent read, re-populating the stale value (fixed by versioned keys)
+  - only TTL, so users see stale data for the whole window after a correction
+  - forgotten layer (CDN or client) serving the old value after a purge
+related:
+  - design.cache-aside
+  - design.redis-cache
+  - rust.tokio-broadcast
+  - rust.tokio-watch
+  - recipe.cache-backed-api
+sources:
+  - https://redis.io/docs/manual/client-side-caching/

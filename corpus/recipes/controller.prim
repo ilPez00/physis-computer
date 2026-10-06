@@ -1,0 +1,51 @@
+id: recipe.controller
+kind: recipe
+title: Controller (reconciliation loop)
+aliases: controller, operator, reconcile loop, desired state controller
+question: how would you write a Kubernetes controller or an operator?
+tags: architecture, controllers, kubernetes
+properties:
+  - level-triggered convergence (missed events are harmless)
+  - idempotent actions (safe to repeat)
+  - bounded retries with backoff
+  - observable status on the object itself
+invariant: Observe current state, diff against desired state, act on the difference, record status, repeat -- never a one-shot script.
+answer_30s: Watch the resource, fetch the observed state it points at, compute the diff, perform the minimum idempotent action, write status, and let the next event or requeue run the loop again.
+flow: |
+  watch (informer) -> work queue (keyed by object identity)
+     |
+  reconcile(key):
+     |
+  read desired (spec) + observed (cluster/APIs)
+     |
+  diff -> act (idempotent, minimal)
+     |
+  write status (conditions, observedGeneration)
+     |
+  requeue with backoff on error (never block the loop)
+compose:
+  - k8s.reconciliation => the loop shape: desired vs observed, act on the diff
+  - k8s.desired-state => the object is the API; the declaration is the intent
+  - k8s.controller => watches, workqueue and ownership references
+  - k8s.api-server => every read and write goes through the API, with RBAC
+  - design.idempotency => reconcile runs repeatedly and after restarts
+  - design.retry-backoff => errors requeue with backoff instead of blocking
+  - design.state-machine => status conditions make progress and stalls visible
+  - design.observability => reconcile counts, error rate, queue depth, work duration
+  - rust.tokio-select => cancellation and shutdown inside long-running loops
+  - rust.graceful-shutdown => stop the loop without orphaning children (release the lease)
+  - rust.error-enum => distinguish retryable from terminal errors explicitly
+failure_modes:
+  - edge-triggered logic that assumes no event is ever missed
+  - non-idempotent side effects that duplicate on requeue
+  - blocking inside reconcile (a slow API call stalls the whole queue)
+  - two controllers owning the same object, fighting each other
+  - no status written, so failures are invisible to operators
+follow_ups:
+  - how do you test a reconcile loop?
+related:
+  - k8s.reconciliation
+  - k8s.controller
+  - design.idempotency
+sources:
+  - https://book.kubebuilder.io/architecture.html

@@ -1,0 +1,40 @@
+id: design.rate-limiting
+kind: design
+title: Rate limiting
+aliases: rate limit, throttling, 429, token bucket
+tags: api, reliability, security
+questions:
+  - how would you rate-limit an API?
+invariant: Requests are admitted against a budget per identity and window, with a defined response when the budget is exhausted.
+answer_30s: Apply a per-identity budget (token bucket or sliding window) close to the entry point, count it centrally, and return 429 with Retry-After plus limits in headers.
+answer_2m: |
+  Decisions to state explicitly: the identity (api key, user, tenant, IP -- per
+  IP is weak behind NAT, per user is what customers experience), the algorithm
+  (token bucket for burst tolerance, sliding window for accuracy, fixed window
+  for simplicity), where it executes (a shared store like Redis, or a local
+  limiter per replica which is cheaper but approximate), and what happens on
+  exceed (reject with 429 and Retry-After, or queue, or degrade). Rate limiting
+  is distinct from load shedding: it protects fairness between clients, shedding
+  protects the service itself, and a good system does both -- with a global
+  concurrency limit behind per-tenant quotas. The distributed counter is the
+  hard part: it must be atomic, fast, and bounded in cardinality.
+when_to_use:
+  - public or partner APIs, expensive endpoints, per-tenant fairness
+avoid_when:
+  - as a substitute for overload protection (per-client limits do not bound total concurrency)
+commands:
+  - kubectl get ingress -A => where a peripheral rate limit is configured (annotations/waf)
+failure_modes:
+  - per-replica counters, so the effective limit is replicas times the configured value
+  - no Retry-After header, so well-behaved clients hammer at full speed
+  - limiting by IP behind a shared NAT, punishing innocent tenants
+follow_ups:
+  - how do you rate limit across many replicas?
+related:
+  - design.load-shedding
+  - design.redis-cache
+  - design.distributed-locking
+  - rust.tower
+  - recipe.rate-limited-api
+sources:
+  - https://cloud.google.com/architecture/rate-limiting-strategies-techniques

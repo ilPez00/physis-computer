@@ -1,0 +1,38 @@
+id: rust.atomics
+kind: rust
+title: Atomics
+aliases: atomic, AtomicU64, fetch_add, lock free counters
+tags: concurrency, performance
+questions:
+  - how do you share a counter between threads without a lock?
+invariant: An atomic update is indivisible and ordered by a memory ordering you must choose.
+answer_30s: Atomics update single values without a lock: Relaxed for counters and gauges, Acquire/Release when the atomic publishes other data.
+answer_2m: |
+  Start from the honest default: Relaxed is correct for a metric or an id
+  generator where the only requirement is no lost updates. Acquire/Release is
+  required when the atomic is a latch guarding other memory, because it
+  establishes the happens-before edge; SeqCst is the simple, slower choice.
+  Atomics also beat locks for in-flight counters on the hot path, and they
+  compose with bounded-concurrency patterns. The practical trap is false
+  sharing: two hot counters in one cache line contend even though nothing is
+  shared logically.
+when_to_use:
+  - counters, gauges, flags, shutdown latches, one-word state
+avoid_when:
+  - several related fields (you would need a lock or a single versioned word)
+minimal_example: |
+  use std::sync::atomic::{AtomicU64, Ordering};
+
+  static REQUESTS: AtomicU64 = AtomicU64::new(0);
+  REQUESTS.fetch_add(1, Ordering::Relaxed);
+  let n = REQUESTS.load(Ordering::Relaxed);
+  let _ = n;
+failure_modes:
+  - Relaxed where the atomic guards other data, so the data is published too late
+  - assuming atomics are free when they are a contended cache line
+related:
+  - rust.mutex
+  - rust.arc
+  - design.observability
+sources:
+  - https://doc.rust-lang.org/std/sync/atomic/

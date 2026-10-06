@@ -1,0 +1,29 @@
+id: rust.anyhow-thiserror
+kind: rust
+title: anyhow vs thiserror
+aliases: anyhow, error context, boxed errors
+tags: errors, pragmatics
+questions:
+  - when would you use anyhow instead of a custom error type?
+invariant: thiserror for typed, matchable errors at boundaries -- including the status code at an HTTP boundary; anyhow for context-rich, opaque errors inside an application.
+answer_30s: Use thiserror when callers must match the error, and anyhow when you only need to report it with context.
+answer_2m: |
+  The distinction is who consumes the error. Library APIs are consumed by code
+  that branches, so they deserve variants; internal plumbing is consumed by a
+  human or a log, so it deserves context. anyhow::Error is a boxed trait object
+  with a context chain and backtrace, and `.context()` is the idiom that turns
+  "No such file" into "cannot read config at /etc/api/config.toml". Using both in
+  one binary is normal: anyhow internally, a typed error at the HTTP boundary
+  where a status code must be chosen.
+when_to_use:
+  - application binaries, CLI tools, internal functions
+avoid_when:
+  - library public APIs, or anywhere a specific status code must be derived
+failure_modes:
+  - returning anyhow::Error from a library, so every caller loses matchability
+  - discarding the source chain when building a response, so logs stop explaining the incident
+related:
+  - rust.error-enum
+  - rust.result
+sources:
+  - https://docs.rs/anyhow/latest/anyhow/

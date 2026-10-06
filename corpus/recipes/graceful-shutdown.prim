@@ -1,0 +1,46 @@
+id: recipe.graceful-shutdown
+kind: recipe
+title: Graceful shutdown architecture
+aliases: graceful shutdown design, drain on deploy, shutdown without data loss
+question: how would you design shutdown so that no work is lost?
+tags: architecture, shutdown, reliability
+properties:
+  - no work accepted after the signal
+  - in-flight work either finished or requeued
+  - queue items acknowledged only after processing
+  - a deadline shorter than the platform's kill timer
+invariant: Shutdown is an ordered protocol: stop admitting, stop pulling, finish or requeue what is in flight, then exit inside the grace period.
+answer_30s: Flip readiness, stop pulling from queues, finish in-flight work under a bounded deadline, acknowledge only what completed, and exit before the orchestrator's grace period expires.
+flow: |
+  SIGTERM
+     |
+  readiness off (no new traffic) / stop polling the queue
+     |
+  cancel background loops (cancellation token)
+     |
+  drain: finish in-flight with timeout; requeue or leave unacked what cannot finish
+     |
+  exit (before terminationGracePeriodSeconds)
+compose:
+  - design.graceful-shutdown => the ordered protocol and the reasons for the order
+  - rust.graceful-shutdown => the async implementation (signal, cancellation, drain)
+  - rust.cancellation => cooperative cancellation and safe cancellation points
+  - rust.tokio-select => racing shutdown against work in loops
+  - design.health-checking => readiness as the traffic gate during shutdown
+  - design.idempotency => anything interrupted must be safe to reprocess
+  - k8s.probe.readiness => the platform mechanism that removes the endpoint
+  - k8s.deployment.rolling-update => the reason shutdown discipline matters (deploys)
+  - k8s.job => run-to-completion work has a different but related termination model
+failure_modes:
+  - exiting immediately on SIGTERM, dropping in-flight requests
+  - drain timeout longer than the grace period, so the process is killed mid-write
+  - acknowledging a message before processing it, so a crash loses it
+  - in-process state that only exists in memory and is lost on the restart
+follow_ups:
+  - what does the client see during the window where it still has your address?
+related:
+  - design.graceful-shutdown
+  - rust.graceful-shutdown
+  - k8s.deployment.rolling-update
+sources:
+  - https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination

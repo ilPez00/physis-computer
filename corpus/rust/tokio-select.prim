@@ -1,0 +1,43 @@
+id: rust.tokio-select
+kind: rust
+title: tokio::select!
+aliases: select, race futures, cancellation point
+tags: async, concurrency, cancellation
+questions:
+  - how do you wait on several futures and stop waiting on the rest?
+invariant: select! completes with one ready branch -- polling order unless you write `biased;` -- and drops the others, so every await inside it is a potential cancellation point.
+answer_30s: select! races futures, resolves on the first completion and cancels the losers by dropping them, which makes it the standard tool for timeouts, shutdown and cancellation.
+answer_2m: |
+  The cancellation semantics are what interviewers probe: dropping a future
+  stops it at its next await, so mid-way side effects remain. That is fine for
+  request-scoped work and dangerous for work that must be atomic unless the step
+  is idempotent or guarded. Branch order is randomised unless you write
+  `biased;`, which matters when a shutdown branch must always win. Canonical
+  uses: timeout (sleep branch), graceful shutdown (signal or cancellation
+  token), and shutdown-aware loops (work versus token).
+when_to_use:
+  - timeouts, shutdown, racing a primary future against a control signal
+avoid_when:
+  - combining independent results you need all of (use join!)
+minimal_example: |
+  use tokio::time::{sleep, Duration};
+
+  tokio::select! {
+      r = do_request() => tracing::info!(?r, "completed"),
+      _ = sleep(Duration::from_millis(250)) => tracing::warn!("deadline exceeded"),
+  }
+
+  // A shutdown branch that must win:
+  // tokio::select! { biased; _ = cancel.cancelled() => break, _ = do_work() => {} }
+failure_modes:
+  - a cancelled branch whose side effect already happened, so the operation runs twice
+  - forgetting `biased;` and assuming a prioritised shutdown branch
+  - holding a guard in a dropped branch, leaving state half-updated
+related:
+  - rust.cancellation
+  - rust.timeout
+  - rust.tokio-join
+  - design.graceful-shutdown
+sources:
+  - https://tokio.rs/tokio/tutorial/select
+  - https://docs.rs/tokio/latest/tokio/macro.select.html

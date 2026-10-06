@@ -1,0 +1,29 @@
+id: rust.async-streams
+kind: rust
+title: Async streams
+aliases: stream, StreamExt, async iterator
+tags: async, streams
+questions:
+  - how do you process a stream of items asynchronously in Rust?
+invariant: A Stream yields items over time, pulled by the consumer, so backpressure comes from the consumer not asking for the next item.
+answer_30s: Streams are async iterators with pull-based backpressure, and their value is composition: bounded concurrency, early termination and error handling per item.
+when_to_use:
+  - pipelines over paged APIs, large files, or queue consumers with bounded in-flight work
+avoid_when:
+  - a single value (a future) or a collection already fully in memory
+minimal_example: |
+  use futures::stream::{self, StreamExt};
+
+  let mut s = stream::iter(1..=100).map(|n| async move { n * 2 }).buffered(4);
+  while let Some(v) = s.next().await {
+      tracing::debug!(v, "processed");
+  }
+failure_modes:
+  - collecting a large stream into a Vec, losing the memory bound
+  - dropping a stream mid-pipeline and assuming the producer stopped cleanly
+related:
+  - rust.bounded-concurrency
+  - rust.tokio-mpsc
+  - design.file-pipeline
+sources:
+  - https://docs.rs/futures/latest/futures/stream/trait.Stream.html

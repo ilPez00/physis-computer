@@ -1,0 +1,45 @@
+id: recipe.cache-backed-api
+kind: recipe
+title: Cache-backed API
+aliases: cache backed api, cached reads, redis in front of database
+question: how would you design an API that serves hot reads from a cache?
+tags: architecture, caching, performance
+properties:
+  - read latency decoupled from the database
+  - bounded staleness (TTL + invalidation)
+  - stampede protection on hot keys
+  - graceful degradation when the cache is down
+invariant: The database stays the source of truth; the cache is derived, bounded by TTL and invalidated on write.
+answer_30s: Read the cache first with a TTL, fall back to the database on miss, invalidate on write, single-flight the misses for hot keys, and keep working when the cache is unavailable.
+flow: |
+  Client -> API
+     |
+  Redis (hit -> return)          miss
+     |                            |
+     |                        Database -> populate cache with TTL
+     |
+  write path: database -> invalidate key (never update in place)
+compose:
+  - design.cache-aside => the read path and its fallback are explicit
+  - design.cache-invalidation => TTL plus explicit invalidation bounds staleness
+  - design.redis-cache => the store's failure modes (eviction, memory, latency) are known
+  - design.timeouts => a cache or database call that hangs must not hold the request open
+  - design.backpressure => a cold cache must not turn into a database stampede
+  - design.connection-pool => database load is bounded even on cache miss storms
+  - design.observability => hit ratio and miss latency are the two numbers to watch
+  - k8s.service => stable name for the cache
+  - rust.app-state => the cache client is shared, not per request
+  - rust.tokio-semaphore => caps concurrent database fills
+failure_modes:
+  - no TTL, so a missed invalidation is permanent
+  - cache treated as authoritative, so an eviction becomes a data loss incident
+  - stampede on restart: every instance misses simultaneously and the database falls over
+  - inconsistent hash keys, so the same logical value is cached once per service
+follow_ups:
+  - how do you keep 20 replicas' caches consistent after a write?
+related:
+  - design.cache-aside
+  - design.redis-cache
+  - recipe.database-backed-api
+sources:
+  - https://redis.io/docs/manual/patterns/

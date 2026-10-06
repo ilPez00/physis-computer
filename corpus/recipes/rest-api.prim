@@ -1,0 +1,48 @@
+id: recipe.rest-api
+kind: recipe
+title: REST API service
+aliases: rest api, http api, crud service, stateless http service
+question: how would you design a REST API service?
+tags: architecture, api, http
+properties:
+  - horizontal scaling (stateless replicas)
+  - zero-downtime deploys
+  - bounded latency via timeouts
+  - observability per route
+invariant: Each request is independent; all state lives in a database or cache, so replicas are interchangeable.
+answer_30s: Stateless HTTP handlers behind a Service, one shared connection pool, typed errors mapped to status codes, timeouts on every outbound call, and readiness-driven rolling updates.
+flow: |
+  Client
+     |
+  Ingress (TLS, routing)
+     |
+  Service -> Deployment: Rust/Axum replicas (stateless)
+     |
+  Connection pool -> Database
+     |
+  (read path: Redis cache)
+compose:
+  - k8s.deployment => replicas are declared and converged, so scaling is a number change
+  - k8s.probe.readiness => only replicas that can serve are in the endpoint list
+  - rust.axum => typed extractors map input to handlers and errors to status codes
+  - rust.app-state => one state value carries the pool, clients and config without globals
+  - rust.connection-pool => the database sees a bounded, reused set of connections
+  - rust.error-enum => client errors and upstream errors map to distinct status codes
+  - design.timeouts => every dependency call has a deadline derived from the request budget
+  - design.health-checking => readiness decides which replicas receive traffic
+  - design.observability => request rate, errors, duration and saturation per route
+  - k8s.service => stable name in front of changing pods
+  - k8s.deployment.rolling-update => new version replaces the old without dropping requests
+failure_modes:
+  - state kept in process memory, so one replica serves a different answer than another
+  - no timeouts on outbound calls, so a slow dependency exhausts the pool
+  - 500 returned for validation errors, hiding real failures in the error rate
+follow_ups:
+  - where would you put pagination and caching?
+related:
+  - rust.axum
+  - rust.app-state
+  - recipe.database-backed-api
+  - recipe.cache-backed-api
+sources:
+  - https://docs.rs/axum/latest/axum/

@@ -1,0 +1,50 @@
+id: design.worker-pool
+kind: design
+title: Worker pool
+aliases: worker pool, consumers, fixed concurrency workers
+tags: architecture, concurrency, batch
+questions:
+  - how would you process a queue with N workers?
+  - how many workers should consume a queue?
+invariant: A fixed set of consumers pulls from a shared bounded queue, so concurrency is a number you chose and can reason about.
+answer_30s: Start N workers, each pulling one item at a time from a bounded queue; the pool size is a deliberate limit on concurrent work and the queue depth absorbs bursts.
+answer_2m: |
+  Three properties make this the standard shape: the concurrency limit is
+  explicit (N, not "as many as arrive"), ownership of each item is exclusive
+  (one worker holds one job, so no locks inside the job), and shutdown is
+  tractable (stop pulling, finish the current item, exit). Sizing comes from the
+  bottleneck: if workers are IO-bound, N can exceed core count; if they are
+  CPU-bound, N near core count; if they share a database, N is limited by the
+  connection pool, which is usually the real answer. Visibility matters as much
+  as sizing: queue depth, in-flight count and per-item latency tell you which
+  side of the pool is the constraint. The failure to avoid is dynamic worker
+  creation per message, which is unbounded concurrency with extra bookkeeping.
+when_to_use:
+  - background job processing, batch pipelines, event consumers
+avoid_when:
+  - work with a hard ordering or single-writer requirement per key (partition instead)
+minimal_example: |
+  data: shared bounded queue (depth D)
+  workers: N consumers, each:
+      loop:
+          job = queue.recv()          # blocks under backpressure
+          handle(job)                 # idempotent, bounded
+          acknowledge(job)
+      on shutdown: stop pulling, finish current item, exit
+failure_modes:
+  - unbounded worker creation per message
+  - pool size set without checking the shared database's connection limit
+  - no queue-depth metric, so the pool's saturation is guessed
+follow_ups:
+  - how do you scale the pool without multiplying database load?
+related:
+  - design.bounded-queue
+  - design.backpressure
+  - design.semaphore
+  - design.producer-consumer
+  - rust.tokio-mpsc
+  - rust.tokio-semaphore
+  - recipe.distributed-worker-pool
+  - k8s.hpa
+sources:
+  - https://sre.google/sre-book/handling-overload/

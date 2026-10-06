@@ -1,0 +1,45 @@
+id: rust.cancellation
+kind: rust
+title: Cancellation
+aliases: cancellation, cancellation token, abort
+tags: async, resilience, shutdown
+questions:
+  - how do you cancel async work safely in Rust?
+invariant: Futures are cancelled by being dropped, so cancellation is cooperative and every await is a cancellation point.
+answer_30s: Dropping a future cancels it, so the standard patterns are a CancellationToken or a watch flag raced in select!, which lets work stop at a safe point instead of mid-write -- and cleanup steps must be idempotent, because a cancelled write may already have happened.
+answer_2m: |
+  The mechanics differ from other languages: there is no external interrupt, and
+  dropping stops the future at its next await, so any partially applied side
+  effect stays applied. That is precisely why steps must be idempotent and why
+  cancellation points belong before, not during, a write. The toolkit:
+  CancellationToken (propagates to children, races well in select!),
+  JoinHandle::abort for the blunt case, watch channels for flags. Graceful
+  shutdown is the disciplined version: stop accepting, signal cancellation, wait
+  for in-flight work under a timeout, then exit.
+when_to_use:
+  - shutdown, timeouts, deadlines, abandoning work whose result nobody needs
+avoid_when:
+  - cancelling work with partial side effects that is not idempotent
+minimal_example: |
+  use tokio_util::sync::CancellationToken;
+
+  let token = CancellationToken::new();
+  let child = token.child_token();
+
+  tokio::spawn(async move {
+      tokio::select! {
+          biased;
+          _ = child.cancelled() => tracing::info!("cancelled"),
+          r = do_work() => tracing::info!(?r, "finished"),
+      }
+  });
+
+  token.cancel();
+follow_ups:
+  - how do you shut down without dropping in-flight requests?
+related:
+  - rust.tokio-select
+  - design.graceful-shutdown
+  - design.timeouts
+sources:
+  - https://docs.rs/tokio-util/latest/tokio_util/sync/struct.CancellationToken.html

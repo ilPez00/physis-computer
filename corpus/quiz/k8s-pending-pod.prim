@@ -1,0 +1,28 @@
+id: quiz.k8s.pending-pod
+kind: quiz
+track: kubernetes
+title: Pod stuck Pending
+question: A pod has been Pending for ten minutes. How do you find out why?
+expects:
+  - describe
+  - events
+  - requests
+  - taints
+  - pvc
+misuse:
+  - restart the deployment => destroys the state that explains the problem
+  - check logs first => the container never started, so there are no logs
+related:
+  - k8s.scheduler
+  - k8s.events
+  - k8s.describe
+  - k8s.resources.requests
+  - k8s.pvc
+follow_ups:
+  - what if the scheduler says the node had insufficient memory?
+  - how does a zonal volume make this worse?
+answer: |
+  kubectl describe pod shows the FailedScheduling event naming the failed
+  predicate: insufficient CPU/memory, taints without tolerations, node selector
+  mismatch, or an unbound PVC. Events sorted by time give the timeline; node
+  describe shows allocatable versus allocated.

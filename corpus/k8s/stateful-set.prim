@@ -1,0 +1,39 @@
+id: k8s.stateful-set
+kind: kubernetes
+title: StatefulSet
+aliases: statefulset, stateful workload
+tags: workloads, state, storage
+questions:
+  - when do you use a StatefulSet instead of a Deployment?
+invariant: Each replica keeps a stable ordinal identity and its own PersistentVolumeClaim across restarts.
+answer_30s: StatefulSets give each replica a stable name (app-0, app-1), stable DNS and its own PVC; starting, stopping and scaling all happen in ordinal order.
+answer_2m: |
+  Identity is the point: Pod db-0 keeps its name, hostname and volume across
+  rescheduling, so cluster membership and replication topology are recomputable
+  from names instead of being random. Ordering is a consequence of that
+  identity model, not the goal: with the default OrderedReady policy the
+  controller waits for pod N to be Ready before creating pod N+1. Use it when a
+  process needs durable identity -- databases, quorum systems, brokers -- not
+  merely because it writes to disk.
+when_to_use:
+  - databases and quorum systems
+  - per-replica durable identity or ordered start
+avoid_when:
+  - replicas are interchangeable (a Deployment is cheaper and scales fast)
+commands:
+  - kubectl get statefulset -o wide => desired vs ready replicas and current revision
+  - kubectl get pvc => which claims exist per ordinal
+  - kubectl describe statefulset db => why replica 1 has not been created yet
+failure_modes:
+  - deleting the StatefulSet leaves orphan PVCs behind (by design)
+  - assuming a parallel rollout; OrderedReady is serial and slow
+  - scaling down keeps the volume, so a later scale up reuses old data
+follow_ups:
+  - how does service discovery work for a StatefulSet?
+related:
+  - k8s.headless-service
+  - k8s.pvc
+  - k8s.deployment
+  - recipe.stateful-workload
+sources:
+  - https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/

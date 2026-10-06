@@ -1,0 +1,38 @@
+id: rust.blocking-in-async
+kind: rust
+title: Blocking in async code
+aliases: spawn_blocking, blocking call, cpu bound
+tags: async, performance, pitfalls
+questions:
+  - what happens if you call a blocking function inside an async task?
+  - how do you run CPU-bound work in Tokio?
+invariant: A blocking call on a runtime worker stalls every task scheduled on that thread, so blocking work belongs in spawn_blocking or a dedicated pool.
+answer_30s: Blocking inside async starves the runtime: use spawn_blocking for file IO, hashing and CPU work, and never hold a std lock or sleep synchronously in a task.
+answer_2m: |
+  The runtime has roughly one worker per core, and a blocked worker cannot poll
+  other tasks, so a 50ms synchronous call inside a handler adds latency to
+  unrelated requests sharing that thread. The toolkit: spawn_blocking for
+  blocking IO and CPU-bound work, tokio::fs instead of std::fs, and a bounded
+  blocking pool for heavy jobs. Related traps: std::thread::sleep instead of
+  tokio::time::sleep, and holding a std MutexGuard across an await. Detectable
+  symptom: latency that scales with concurrency while CPU looks idle.
+when_to_use:
+  - hashing, compression, image work, blocking SDKs and legacy sync libraries
+avoid_when:
+  - tiny pure-CPU operations where the hand-off costs more than the work
+minimal_example: |
+  let digest = tokio::task::spawn_blocking(move || {
+      sha256_of_bytes(&payload) // CPU-bound, off the runtime
+  })
+  .await?;
+  let _ = digest;
+failure_modes:
+  - std::fs or a synchronous client inside a handler
+  - std::thread::sleep where async sleep was intended
+  - unbounded spawn_blocking, which only moves the queue
+related:
+  - rust.tokio-spawn
+  - rust.mutex-across-await
+  - design.bounded-queue
+sources:
+  - https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html

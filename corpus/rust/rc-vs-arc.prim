@@ -1,0 +1,21 @@
+id: rust.rc-vs-arc
+kind: rust
+title: Rc vs Arc vs Box
+aliases: rc, reference counting
+tags: ownership, fundamentals
+questions:
+  - why can you not send an Rc across threads?
+invariant: Rc counts non-atomically so it is neither Send nor Sync; Arc pays an atomic per clone to be shareable.
+answer_30s: Rc is single-threaded and cheap, Arc uses atomics to be sendable across threads, and Box is unique ownership with no counting.
+when_to_use:
+  - Rc for single-threaded graphs; Arc across tasks; Box for exactly one owner
+avoid_when:
+  - reaching for Arc when the value is not shared (Box is free)
+failure_modes:
+  - building a single-threaded structure with Arc and paying atomic traffic for nothing
+  - trying to move an Rc into tokio::spawn (a compile error whose real cause is a design mistake)
+related:
+  - rust.arc
+  - rust.send-sync
+sources:
+  - https://doc.rust-lang.org/std/rc/struct.Rc.html

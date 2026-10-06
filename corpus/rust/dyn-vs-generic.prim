@@ -1,0 +1,18 @@
+id: rust.dyn-vs-generic
+kind: rust
+title: dyn Trait vs generic bounds
+aliases: dyn trait, static vs dynamic dispatch, boxed trait object
+tags: api design, performance
+questions:
+  - when would you use dyn Trait instead of a generic parameter?
+invariant: dyn gives one code path with runtime dispatch and heterogeneous collections; generics give per-type copies with compile-time dispatch.
+answer_30s: Use dyn when the concrete type is chosen at runtime or implementations must be stored together; use generics when the type is known at compile time and the call is hot.
+when_to_use:
+  - runtime-selected implementations, heterogeneous collections, thin public APIs
+avoid_when:
+  - hot paths where the indirect call is measurable, or closed sets where an enum dispatch is simpler
+related:
+  - rust.traits
+  - rust.generics-monomorphization
+sources:
+  - https://doc.rust-lang.org/book/ch18-02-trait-objects.html

@@ -1,0 +1,35 @@
+id: rust.serde
+kind: rust
+title: serde
+aliases: serde, serialization, Deserialize
+tags: data, api
+questions:
+  - how do you control the JSON shape of a type?
+invariant: Derived serde impls are a declarative mapping from the type; attributes decide names, defaults and strictness, so the wire format is explicit.
+answer_30s: Derive Serialize/Deserialize and control the contract with attributes -- names, defaults, optional fields, unknown-field policy -- instead of letting struct layout decide the API.
+answer_2m: |
+  The attributes that matter in server code: rename_all for a naming
+  convention, skip_serializing_if to avoid null noise, default on new fields so
+  old clients keep working (additive change without a version bump), and
+  deny_unknown_fields when strictness is wanted. Deserialisation errors are
+  values with line and column, so malformed input is a 400 with a reason rather
+  than a panic. serde validates types, not business rules: validate after
+  deserialising.
+when_to_use:
+  - every API payload, config file and message body
+minimal_example: |
+  #[derive(serde::Serialize, serde::Deserialize)]
+  #[serde(rename_all = "snake_case", deny_unknown_fields)]
+  struct CreateOrder {
+      user_id: String,
+      #[serde(default)]
+      coupon: Option<String>,
+  }
+failure_modes:
+  - adding a required field, breaking existing clients
+  - deserialising into a type and trusting values without validation
+related:
+  - rust.axum
+  - rust.error-enum
+sources:
+  - https://serde.rs/attributes.html

@@ -1,0 +1,45 @@
+id: rust.axum
+kind: rust
+title: Axum handlers and extractors
+aliases: axum, http server, tower service
+tags: http, async, api
+questions:
+  - how do you structure an Axum service?
+invariant: A handler is an async function whose arguments are typed extractors, and the router turns it into a Tower service.
+answer_30s: Handlers take extractors (path, query, JSON, state) and return IntoResponse, so request validation and response mapping are typed and compose with Tower layers.
+answer_2m: |
+  The extractor model is the thing to be able to explain: ordering matters
+  (body-consuming extractors last), rejection types are how bad input becomes a
+  4xx, and State<Arc<AppState>> is how shared resources reach handlers without
+  globals. Middleware is a Tower layer rather than handler code, so timeouts,
+  tracing, compression and request ids are configuration. The production shape:
+  state built once with validation, router composed from nested routers, layers
+  in a deliberate order, and shutdown driven by axum::serve with a cancellation
+  signal.
+when_to_use:
+  - HTTP APIs, webhooks, internal services
+minimal_example: |
+  use axum::{extract::{Path, State}, routing::get, Json, Router};
+
+  async fn get_order(State(st): State<AppState>, Path(id): Path<String>)
+      -> Result<Json<Order>, AppError> {
+      Ok(Json(st.db.load(&id).await?))
+  }
+
+  fn app(st: AppState) -> Router {
+      Router::new().route("/orders/:id", get(get_order)).with_state(st)
+          .layer(tower_http::trace::TraceLayer::new_for_http())
+  }
+failure_modes:
+  - returning 500 for client errors because the error mapping is missing
+  - blocking work (hashing, std::fs) on a runtime worker instead of spawn_blocking
+  - no request body limit, so a large upload exhausts memory
+related:
+  - rust.tower
+  - rust.serde
+  - rust.blocking-in-async
+  - rust.app-state
+  - rust.tracing
+  - recipe.rest-api
+sources:
+  - https://docs.rs/axum/latest/axum/

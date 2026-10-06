@@ -1,0 +1,39 @@
+id: design.shared-state
+kind: design
+title: Shared state
+aliases: shared mutable state, shared state, state sharing
+tags: concurrency, architecture
+questions:
+  - how do you share state between concurrent workers?
+invariant: Shared mutable state is a design choice with a cost model; the alternatives are ownership transfer, immutable snapshots and single-owner serialization.
+answer_30s: Prefer no shared state: move ownership to one task, pass immutable snapshots, or serialize writes through a single owner (actor or channel) -- and use a lock only for a small, genuinely shared mutation.
+answer_2m: |
+  Four designs, in the order to consider them: (1) no sharing, each worker has
+  its own state (stateless services, partition by key); (2) ownership transfer,
+  where the message or job carries the data and only one task holds it (channels,
+  actors); (3) immutable snapshot sharing, where readers get a new version
+  atomically (Arc plus copy-on-write, watch channel for the latest version);
+  (4) a lock around a small mutation, when the state is truly shared and the
+  critical section is short. The interview mistake to avoid is jumping to (4) for
+  everything: a global lock converts a horizontally scalable service into an
+  effectively single-threaded one, and it usually appears as latency that no
+  amount of autoscaling fixes. Also remember the horizontal version of the same
+  question: in-process sharing does not extend across replicas, so a local cache
+  or counter must be reconciled with the shared source of truth.
+when_to_use:
+  - deciding the concurrency model of a service, worker or controller
+avoid_when:
+  - global locks on a hot path, or shared mutable state across replicas without a coordination plan
+failure_modes:
+  - a lock protecting a large critical section, serializing a scalable service
+  - per-replica state assumed to be global (counters, caches, rate limits)
+  - two writers to the same state with no single owner, so they overwrite each other
+related:
+  - rust.arc
+  - rust.mutex
+  - rust.rwlock
+  - rust.tokio-mpsc
+  - rust.app-state
+  - design.worker-pool
+sources:
+  - https://doc.rust-lang.org/book/ch16-00-concurrency.html

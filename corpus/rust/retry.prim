@@ -1,0 +1,48 @@
+id: rust.retry
+kind: rust
+title: Retries with exponential backoff
+aliases: retry, backoff, jitter
+tags: resilience, async
+questions:
+  - how do you implement retries correctly?
+invariant: Retry only idempotent operations, with exponential backoff plus jitter, a bounded attempt count and a total deadline.
+answer_30s: Retry idempotent calls with exponential backoff and jitter, cap attempts and total time, and classify errors so permanent failures are not retried.
+answer_2m: |
+  Every ingredient has a reason. Idempotency: a timeout may mean the write
+  succeeded. Backoff: an immediate retry amplifies load exactly when the
+  dependency is struggling. Jitter: without it all clients retry in lockstep,
+  which is the thundering herd that turns a blip into an outage. Caps: without
+  them one slow call becomes a request holding a connection for minutes. Error
+  classification: retrying a validation error just wastes budget. And if
+  retries exist at two layers, cap the total -- layered retries multiply.
+when_to_use:
+  - transient network or dependency errors on idempotent operations
+avoid_when:
+  - non-idempotent writes without an idempotency key; validation or auth failures
+minimal_example: |
+  let mut delay = Duration::from_millis(50);
+  for attempt in 1..=4 {
+      match call().await {
+          Ok(v) => return Ok(v),
+          Err(e) if e.is_retryable() && attempt < 4 => {
+              let jitter = Duration::from_millis(rand::random::<u64>() % 50);
+              tokio::time::sleep(delay + jitter).await;
+              delay *= 2;
+          }
+          Err(e) => return Err(e),
+      }
+  }
+failure_modes:
+  - retrying non-idempotent writes, creating duplicates
+  - no jitter, so retries synchronise across clients
+  - retries at two layers multiplying the effective attempt count
+follow_ups:
+  - what stops retries from making an overload worse?
+related:
+  - design.retry-backoff
+  - design.idempotency
+  - design.circuit-breaker
+  - rust.timeout
+  - recipe.resilient-dependent-service
+sources:
+  - https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/

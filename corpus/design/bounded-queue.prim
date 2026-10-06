@@ -1,0 +1,40 @@
+id: design.bounded-queue
+kind: design
+title: Bounded queue
+aliases: bounded channel, queue depth, buffer bound
+tags: architecture, concurrency, reliability
+questions:
+  - why should a queue have a maximum size?
+invariant: A queue has a finite capacity and a declared overflow policy, so latency and memory stay bounded under load.
+answer_30s: A bounded queue caps in-flight work and turns overload into a decision -- block, reject, or drop -- instead of unbounded memory growth and unbounded latency.
+answer_2m: |
+  Queueing theory in one line: once arrival rate exceeds service rate, latency
+  grows without bound and the queue becomes a memory leak with extra steps. The
+  bound also determines what "healthy" means: queue depth is the best single
+  saturation signal for a worker, and it is what you autoscale on when CPU is
+  not the bottleneck. Choosing the depth is a trade-off between burst
+  absorption (deeper) and failure speed (shallower): a shallow queue with
+  shedding fails fast and keeps tail latency honest, a deep queue absorbs bursts
+  but hides the moment the system stopped keeping up. Always name the policy:
+  a bound without a policy just moves the crash.
+when_to_use:
+  - every hand-off between stages with different speeds, and every worker pool
+avoid_when:
+  - nowhere; if you believe you do not need a bound, name the overflow policy explicitly
+commands:
+  - kubectl top pod => memory flat under sustained load is evidence the queue is bounded
+failure_modes:
+  - unbounded queue, so a slow consumer becomes an OOM rather than a slow consumer
+  - a bound so deep that latency budgets are breached long before the queue fills
+  - no metric on queue depth, so saturation is invisible
+follow_ups:
+  - what would you autoscale on for a queue consumer?
+related:
+  - design.backpressure
+  - design.worker-pool
+  - design.producer-consumer
+  - design.load-shedding
+  - rust.tokio-mpsc
+  - k8s.hpa
+sources:
+  - https://aws.amazon.com/builders-library/avoiding-insurmountable-queue-backlogs/

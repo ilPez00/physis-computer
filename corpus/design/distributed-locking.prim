@@ -1,0 +1,39 @@
+id: design.distributed-locking
+kind: design
+title: Distributed locking
+aliases: distributed lock, redis lock, mutual exclusion across nodes
+tags: distributed systems, coordination
+questions:
+  - how do you ensure only one node runs a job at a time?
+invariant: A distributed lock is a lease with a TTL and a unique holder token; every acquisition, renewal and release must be atomic and owned.
+answer_30s: Take a lease with a nonce and a short TTL, renew it while working, and release it only if the stored nonce is still yours -- and design the work so a lock failure is not a correctness failure.
+answer_2m: |
+  The hard part is not acquiring the lock, it is what happens when the holder
+  pauses (GC, network partition, container freeze): the lease expires, another
+  node takes it, and the first node resumes still believing it holds the lock.
+  That is why a fencing token is the standard fix -- each acquisition gets a
+  monotonically increasing token, and the resource rejects writes from an older
+  token, so the stale holder can no longer do damage. Practical hierarchy:
+  avoid needing the lock (single-writer partitioning, work assignment with
+  leases, idempotent work), and if you truly need one, use a system designed for
+  consensus (etcd, Consul, ZooKeeper) rather than a cache with SETNX, unless you
+  can tolerate the failure mode.
+when_to_use:
+  - singleton background jobs, leader-only operations, exclusive access to a shared external resource
+avoid_when:
+  - work that can be partitioned by key, or made idempotent, or assigned to a single owner
+failure_modes:
+  - a lock without TTL, so a crashed holder blocks the job forever
+  - a lock without a holder token, so one node deletes another's lock
+  - assuming the lock prevents stale writes after a pause (needs fencing tokens)
+  - split-brain: two holders after a partition, both acting
+follow_ups:
+  - what happens if the lock holder pauses for longer than the TTL?
+related:
+  - design.leader-election
+  - design.idempotency
+  - design.redis-cache
+  - rust.tokio-select
+sources:
+  - https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html
+  - https://etcd.io/docs/latest/learning/api/#lease-api

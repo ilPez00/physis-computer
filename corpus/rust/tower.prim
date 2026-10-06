@@ -1,0 +1,38 @@
+id: rust.tower
+kind: rust
+title: Tower layers
+aliases: tower, middleware, layer
+tags: http, resilience, architecture
+questions:
+  - where do timeouts, retries and rate limits belong in a Rust service?
+invariant: Middleware is a Tower layer wrapping a Service, so the same policy types apply to inbound and outbound calls.
+answer_30s: Tower layers compose request policy -- timeout, retry, concurrency limit, rate limit, tracing, load shedding -- around any service, on either side of the connection.
+answer_2m: |
+  The architecture payoff is that policy lives outside business logic and is
+  testable on its own; the subtle part is ordering, since the outermost layer
+  sees the request first (a timeout outside a retry bounds the whole sequence,
+  inside it bounds each attempt). The same builder pattern protects outbound
+  calls: a client wrapped with timeout, retry and a concurrency limit is how an
+  unreliable dependency stops being able to take the service down with it.
+when_to_use:
+  - policy that applies to many routes or many outbound calls
+avoid_when:
+  - per-route business rules (keep those in handlers)
+minimal_example: |
+  use tower::{ServiceBuilder, timeout::TimeoutLayer};
+
+  let client = ServiceBuilder::new()
+      .layer(TimeoutLayer::new(Duration::from_millis(300)))
+      .layer(tower::limit::ConcurrencyLimitLayer::new(32))
+      .service(hyper_client);
+  let _ = client;
+failure_modes:
+  - a layer order that silently disables a policy (retry outside timeout)
+  - a retry layer on non-idempotent routes
+related:
+  - rust.axum
+  - rust.retry
+  - rust.bounded-concurrency
+  - design.rate-limiting
+sources:
+  - https://docs.rs/tower/latest/tower/

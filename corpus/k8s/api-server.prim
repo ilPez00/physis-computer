@@ -1,0 +1,31 @@
+id: k8s.api-server
+kind: kubernetes
+title: API server
+aliases: kube-apiserver, api server
+tags: architecture, control-plane
+questions:
+  - what does the API server actually do?
+invariant: The API server is the single front door: it authenticates, authorizes, validates and persists objects, and every other component talks only to it.
+answer_30s: Every component and user goes through the API server: it authenticates, runs RBAC, validates the object against its schema, stores it in etcd, and informs watchers of the change.
+answer_2m: |
+  Two properties worth stating: it is stateless (all state is in etcd, so
+  several replicas run behind one endpoint) and it is the single choke point
+  where policy applies (RBAC, admission webhooks, validation). Nothing else in
+  the system holds the source of truth. That is why kubectl failing with a TLS
+  or connection error stops every automation at once, and why an overloaded API
+  server looks like everything breaking at the same time -- the operators still
+  work, the watch stream does not.
+when_to_use:
+  - understanding permissions, validation, and why all automation depends on it
+commands:
+  - kubectl auth can-i create deployments -n payments => RBAC decision for the current identity
+  - kubectl api-resources => which kinds exist and whether they are namespaced
+failure_modes:
+  - API server or etcd overloaded, so watches lag and controllers stall
+  - admission webhook down, blocking all writes to matched kinds
+related:
+  - k8s.etcd
+  - k8s.controller
+  - k8s.namespace
+sources:
+  - https://kubernetes.io/docs/concepts/architecture/

@@ -1,0 +1,37 @@
+id: design.file-pipeline
+kind: design
+title: File processing pipeline
+aliases: file pipeline, batch files, etl, ingest files
+tags: architecture, batch, data
+questions:
+  - how would you process a large set of uploaded files?
+invariant: Files are ingested to durable storage first, then processed in bounded, resumable, idempotent stages keyed by a content address.
+answer_30s: Upload to durable storage, enqueue a reference (not the bytes), process in bounded parallel stages keyed by a file digest, and make every stage resumable and safe to re-run.
+answer_2m: |
+  The shape follows from three constraints: files are large (so they must not
+  travel through the message queue or memory), processing is slow (so it needs
+  its own worker pool with bounded concurrency), and stages fail (so each stage
+  must be resumable). Standard structure: direct upload to object storage with
+  the queue carrying the object key or URL, a worker that streams the object,
+  per-stage status recorded against the file digest, and outputs written to
+  storage rather than passed in memory. Idempotency by content digest is what
+  makes retries free: the same input file processed twice produces the same
+  output, and a partially processed file is recognisable. Name the operational
+  hooks: poison-file quarantine (so one bad file does not block the queue),
+  per-stage metrics, and a dead-letter path.
+when_to_use:
+  - document ingest, media processing, data imports, log/file ETL
+failure_modes:
+  - file bytes in the queue payload, so the broker becomes a storage system
+  - unbounded parallelism per file, so memory and IO collapse on large inputs
+  - no poison-file handling, so the queue blocks behind one unprocessable item
+  - no per-file state, so a restart reprocesses everything from the start
+related:
+  - design.worker-pool
+  - design.idempotency
+  - design.bounded-queue
+  - rust.async-streams
+  - rust.bounded-concurrency
+  - recipe.file-processing-pipeline
+sources:
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/optimizing-performance.html

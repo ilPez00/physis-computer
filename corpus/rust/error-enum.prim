@@ -1,0 +1,45 @@
+id: rust.error-enum
+kind: rust
+title: Custom error enums
+aliases: error enum, domain errors
+tags: errors, api design
+questions:
+  - how do you design an error type for a library?
+invariant: Each variant encodes a distinct caller decision, so callers can match instead of parsing messages.
+answer_30s: Define an enum with one variant per distinguishable failure and derive thiserror::Error, so callers choose a response from a variant rather than from text.
+answer_2m: |
+  The test is decision-making: if two failures lead to the same caller action
+  they can share a variant; if one means 404 and the other means alert, they
+  must be separate. Keep the source chain (`#[source]`/`#[from]`), keep
+  implementation types (a raw reqwest::Error) out of the public boundary, and
+  expose enough structure that the HTTP layer maps variants to status codes
+  without string matching. In an application, anyhow at the top level is fine;
+  at a library or protocol boundary, precise enums are the contract.
+when_to_use:
+  - public library APIs, protocol boundaries, anything with retry or status semantics
+avoid_when:
+  - internal glue where one opaque error is genuinely enough
+minimal_example: |
+  #[derive(Debug, thiserror::Error)]
+  enum ApiError {
+      #[error("not found: {0}")] NotFound(String),
+      #[error("invalid input: {reason}")] Invalid { reason: String },
+      #[error("upstream failed")] Upstream(#[from] reqwest::Error),
+  }
+
+  fn status(e: &ApiError) -> u16 {
+      match e {
+          ApiError::NotFound(_) => 404,
+          ApiError::Invalid { .. } => 400,
+          ApiError::Upstream(_) => 502,
+      }
+  }
+failure_modes:
+  - one catch-all Other(String), forcing callers to match on message text
+  - leaking implementation errors across the API boundary
+related:
+  - rust.result
+  - rust.anyhow-thiserror
+  - rust.question-mark
+sources:
+  - https://docs.rs/thiserror/latest/thiserror/

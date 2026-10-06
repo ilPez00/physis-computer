@@ -1,0 +1,34 @@
+id: design.exactly-once
+kind: design
+title: Exactly-once delivery
+aliases: exactly once, at least once, delivery semantics
+tags: distributed systems, queues
+questions:
+  - how do you guarantee a message is processed exactly once?
+invariant: Delivery is at-least-once or at-most-once; "exactly once" is achieved only as at-least-once delivery plus idempotent or deduplicated processing.
+answer_30s: You do not get exactly-once delivery: you get at-least-once delivery plus idempotent processing, which is what makes the effect happen exactly once.
+answer_2m: |
+  The reason is the two-generals problem: a consumer that processes and then
+  crashes before acknowledging causes redelivery, and a consumer that
+  acknowledges before processing loses the message on crash. So the realistic
+  choice is which failure you prefer, and then how you make the effect single.
+  Implementation: deduplicate on a message id or business key (unique
+  constraint or a key table with the outcome stored), make the processing step
+  idempotent, and commit the state change and the acknowledgement together
+  where possible (transactional outbox, or a store that offers exactly-once
+  sinks like Kafka transactions within their boundary). Say the boundary out
+  loud: exactly-once is a property of a pipeline you designed, not of a
+  transport you bought.
+when_to_use:
+  - payments, notifications, inventory changes, anything a duplicate corrupts
+failure_modes:
+  - claiming exactly-once because the broker says so, while the consumer side effect is not idempotent
+  - deduplicating without retention, so a replay days later duplicates the effect
+  - acknowledging before the work is durably recorded, so a crash loses the message
+related:
+  - design.idempotency
+  - design.producer-consumer
+  - design.state-machine
+  - recipe.event-ingestion
+sources:
+  - https://www.confluent.io/blog/exactly-once-semantics-are-possible-heres-how-apache-kafka-does-it/

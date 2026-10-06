@@ -1,0 +1,29 @@
+id: k8s.describe
+kind: kubernetes
+title: describe
+aliases: kubectl describe, object inspection
+tags: operations, diagnostics
+questions:
+  - where do you look first when a pod is not behaving?
+invariant: describe renders the spec, the observed status and the recent events of one object in one place.
+answer_30s: `kubectl describe` joins spec, status and events for one object, which is why it is the first command for almost any object-level problem.
+answer_2m: |
+  What to read, in order: Status and Conditions (Ready/ContainersReady), then
+  the container status block (State, Last State, Reason like OOMKilled or
+  ImagePullBackOff, Exit Code), then the probe configuration that caused
+  failures, then Mounts and Environment (a missing ConfigMap key shows here),
+  and finally Events. For a Service, describe shows the selector and the
+  endpoints; for a PVC, the binding failure reason. It answers "what does the
+  API server think the state of this object is" without YAML archaeology.
+when_to_use:
+  - first command for any object in the wrong state
+commands:
+  - kubectl describe pod api-... => probe failures, OOMKills, mount and scheduling errors in one page
+  - kubectl describe node <node> => capacity, allocated requests, taints and evicted Pods
+failure_modes:
+  - reading only the pod's status and missing the event tail at the bottom
+related:
+  - k8s.events
+  - k8s.debugging-workflow
+sources:
+  - https://kubernetes.io/docs/reference/kubectl/generated/kubectl_describe/

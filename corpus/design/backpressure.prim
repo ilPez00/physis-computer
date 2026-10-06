@@ -1,0 +1,46 @@
+id: design.backpressure
+kind: design
+title: Backpressure
+aliases: backpressure, bounded work, flow control
+tags: architecture, reliability, concurrency
+questions:
+  - what happens when producers are faster than consumers?
+  - how do you stop a queue from growing forever?
+invariant: When producers outrun consumers, the system must push back, drop, or buffer -- an unbounded buffer is not a solution, it is a delayed failure.
+answer_30s: Backpressure is the mechanism that makes producers slow down when consumers cannot keep up: bounded queues, finite permits, and explicit shedding instead of unbounded growth.
+answer_2m: |
+  Every queue has three possible responses to overflow: block the producer
+  (backpressure), drop work (shedding), or grow (which converts a throughput
+  problem into a memory problem and moves the failure in time rather than
+  removing it). The engineering question is which one is correct at that
+  boundary, and the answer differs per stage: a user-facing ingest endpoint may
+  reject with 429, an internal worker should block and slow its source, a
+  metrics pipeline can drop samples silently. Backpressure is therefore a chain
+  property, not a component property: if one stage has an unbounded buffer, the
+  pressure never reaches the source, and the failure appears as an OOM far from
+  the cause. It is also the reason HPA alone is not an answer -- autoscaling
+  reacts in minutes, backpressure in milliseconds.
+when_to_use:
+  - any async hand-off: HTTP to worker, worker to database, service to service
+avoid_when:
+  - genuinely lossy data (metrics samples) where load shedding is cheaper than blocking
+commands:
+  - kubectl top pod => is memory growing in lockstep with ingress rate, the unbounded-queue fingerprint
+failure_modes:
+  - unbounded channel or in-memory queue hiding the overload
+  - backpressure applied at the wrong layer, so the failing stage is not the one that slows down
+  - HPA as the only overload response, too slow to prevent the OOM
+misuse:
+  - add more workers without bounding the queue => moves the bottleneck and multiplies the blast radius
+follow_ups:
+  - where would you drop work instead of slowing down?
+related:
+  - design.bounded-queue
+  - design.semaphore
+  - design.load-shedding
+  - rust.tokio-mpsc
+  - rust.bounded-concurrency
+  - k8s.hpa
+sources:
+  - https://sre.google/sre-book/handling-overload/
+  - https://aws.amazon.com/builders-library/avoiding-insurmountable-queue-backlogs/

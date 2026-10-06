@@ -1,0 +1,47 @@
+id: recipe.redis-backed-service
+kind: recipe
+title: Service using Redis
+aliases: redis design, cache and counters with redis
+question: how would you design a service that uses Redis?
+tags: architecture, caching, state
+properties:
+  - reads decoupled from the database
+  - bounded staleness via TTL + invalidation
+  - atomic counters and leases in a shared store
+  - explicit behaviour when Redis is empty or slow
+invariant: Redis stores derived, reconstructible state (cache, counters, sessions, locks), never the only copy of data you cannot rebuild.
+answer_30s: Split Redis by role: a cache instance with TTLs and eviction, and a separate coordination instance for counters and locks, with a plan for cold-start and latency spikes.
+flow: |
+  service replicas
+     |
+  cache role: entries with TTL (allkeys-lru)   coordination role: counters, locks, rate limits
+     |
+  database / primary source of truth (durable)
+     |
+  failure: cache loss = slower, not broken; coordination loss = degraded, not corrupt
+compose:
+  - design.redis-cache => what Redis is good at and its operating limits
+  - design.cache-aside => read path and invalidation rules
+  - design.cache-invalidation => TTL, versioned keys, pub/sub purge
+  - design.rate-limiting => atomic counters (INCR/Lua) as a limiter
+  - design.distributed-locking => leases and the fencing-token caveat
+  - design.idempotency => idempotency keys stored with a TTL
+  - design.backpressure => a cache miss storm must not take down the database
+  - design.observability => hit ratio, evictions, latency percentiles, memory
+  - k8s.service => stable address for the Redis endpoint
+  - k8s.pvc => persistence decision for the coordination instance
+failure_modes:
+  - cache treated as authoritative, so a flush becomes data loss
+  - one instance for cache and locks, so eviction silently breaks coordination
+  - no memory limit or eviction policy, so the instance is OOM-killed under pressure
+  - big keys or KEYS/SCAN on the hot path, spiking latency for everyone
+  - session state with no TTL, so memory grows without bound
+follow_ups:
+  - Redis restarts empty: what happens to your service in the first minute?
+related:
+  - design.redis-cache
+  - design.cache-aside
+  - design.rate-limiting
+sources:
+  - https://redis.io/docs/manual/patterns/
+  - https://redis.io/docs/reference/optimization/latency/

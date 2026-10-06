@@ -1,0 +1,48 @@
+id: recipe.file-processing-pipeline
+kind: recipe
+title: File processing pipeline
+aliases: file pipeline, document ingest, batch file processing
+question: how would you design a pipeline that processes uploaded files?
+tags: architecture, batch, data
+properties:
+  - large payloads never in the message queue
+  - bounded parallelism per stage
+  - resumable per file
+  - poison files quarantined, not blocking
+invariant: Store the bytes durably, queue only references, process in bounded idempotent stages keyed by content digest.
+answer_30s: Upload directly to object storage, enqueue the object key, process with a bounded worker pool in resumable stages recorded per file digest, and quarantine files that fail repeatedly.
+flow: |
+  client -> object storage (direct upload, pre-signed)
+     |
+  enqueue {key, digest, size}
+     |
+  queue -> stage workers (parse -> transform -> index)
+     |
+  per-file state: received/parsed/transformed/indexed (resumable)
+     |
+  failures: retry -> dead letter -> quarantine + alert
+compose:
+  - design.file-pipeline => the stage model and content-address idempotency
+  - design.worker-pool => bounded concurrency sized to CPU or IO, not to arrivals
+  - design.bounded-queue => backlog visible and bounded per stage
+  - design.idempotency => reprocessing a file is free
+  - design.state-machine => per-file status, so a stuck file is identifiable
+  - design.backpressure => a slow stage slows ingestion instead of buffering
+  - design.observability => per-stage throughput, queue depth, failure rate
+  - k8s.deployment => stage workers scale independently
+  - k8s.resources.limits => memory limits sized for the largest file a worker may parse
+  - rust.bounded-concurrency => at most N files in flight in-process
+  - rust.async-streams => stream the object rather than loading it whole
+failure_modes:
+  - file bytes through the queue payload, so the broker becomes storage
+  - unbounded parallelism, so memory collapses on large inputs
+  - no per-file state, so a restart reprocesses everything
+  - one poison file blocking the partition (no quarantine path)
+follow_ups:
+  - how do you reprocess one file after fixing the parser?
+related:
+  - design.file-pipeline
+  - design.worker-pool
+  - k8s.job
+sources:
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/optimize-uploads.html

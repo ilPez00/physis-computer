@@ -1,0 +1,34 @@
+id: design.health-checking
+kind: design
+title: Health checking
+aliases: health check, readiness, liveness, health endpoint
+tags: operations, reliability
+questions:
+  - what should /healthz return?
+invariant: Separate liveness (should this process be restarted) from readiness (should traffic be sent here), and keep both cheap and dependency-aware in the right direction.
+answer_30s: Expose two endpoints: a liveness that only checks the process itself, and a readiness that reports whether traffic can be served right now, including required dependencies.
+answer_2m: |
+  The split is the whole design. Liveness must not check external
+  dependencies, or a database blip restarts every replica and makes the outage
+  worse. Readiness should check what the request path needs -- and the honest
+  version is deeper than "is the pool connected": a readiness that embeds a
+  cheap dependency probe stops sending traffic to replicas that cannot serve,
+  which is what makes rolling updates safe and what absorbs a partial outage. A
+  third endpoint for startup (or a startup probe) covers slow boots. What not to
+  do: authenticate health endpoints (so probes fail on auth changes), put slow
+  work in them (probes time out under load), or expose internal details in the
+  body (leak surface).
+when_to_use:
+  - every service behind a load balancer or orchestrator; required for zero-downtime deploys
+failure_modes:
+  - readiness with a hard dependency on a flaky service, flapping all replicas out of rotation
+  - liveness that restarts the fleet when shared infrastructure is slow
+  - health endpoints behind auth or rate limits, so probes fail during incidents
+related:
+  - k8s.probe.readiness
+  - k8s.probe.liveness
+  - k8s.probe.startup
+  - design.graceful-shutdown
+  - design.observability
+sources:
+  - https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/

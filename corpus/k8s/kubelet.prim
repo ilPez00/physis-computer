@@ -1,0 +1,32 @@
+id: k8s.kubelet
+kind: kubernetes
+title: kubelet
+aliases: kubelet, node agent
+tags: architecture, control-plane
+questions:
+  - what does the kubelet do?
+invariant: The kubelet is the per-node agent that runs the PodSpecs assigned to its node and reports their status back.
+answer_30s: The kubelet watches assigned Pods, starts containers through the container runtime, runs probes, mounts volumes and reports status -- it is the only component that actually runs containers.
+answer_2m: |
+  Everything else in the control plane is bookkeeping; the kubelet is the
+  executor. It owns the container runtime interface (CRI), the network plugin
+  (CNI) invocation, volume mounting, probe execution, and cgroup enforcement of
+  requests/limits. That placement explains the failure shapes: probe failures
+  are kubelet decisions, OOMKill is the kernel reacting to a kubelet-configured
+  limit, NodeNotReady is the kubelet stopping its heartbeat, and image pulls
+  happen here (so imagePullBackOff is a node-level problem with registry
+  credentials and network).
+when_to_use:
+  - understanding node-level failures, probes, evictions and image pulls
+commands:
+  - kubectl describe node <node> => kubelet version, conditions, eviction pressure
+  - kubectl get events --field-selector reason=NodeNotReady => kubelet heartbeat losses
+failure_modes:
+  - node NotReady because the kubelet or runtime is unhealthy
+  - image pull failures from node-level registry credentials
+related:
+  - k8s.scheduler
+  - k8s.api-server
+  - k8s.probe.liveness
+sources:
+  - https://kubernetes.io/docs/concepts/architecture/

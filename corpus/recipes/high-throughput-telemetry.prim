@@ -1,0 +1,49 @@
+id: recipe.high-throughput-telemetry
+kind: recipe
+title: High-throughput telemetry collector
+aliases: telemetry collector, metrics pipeline, tracing collector, high volume observability
+question: how would you design a service that collects telemetry from a whole fleet?
+tags: architecture, observability, scale
+properties:
+  - batches instead of per-sample writes
+  - loss tolerated and explicitly bounded
+  - cardinality controlled at the edge
+  - ingestion decoupled from storage
+invariant: Aggregate early, batch always, bound every buffer, and accept deliberate loss -- telemetry must never be able to block the applications it observes.
+answer_30s: Aggregate in-process, batch and bound buffers at the agent, enforce cardinality limits at the collector, and let the pipeline shed load because telemetry is not a system of record.
+flow: |
+  app (aggregate counters/histograms in-process)
+     |
+  node agent (batch, bounded buffer, drop on overflow)
+     |
+  collector tier (cardinality limits, sampling, aggregation)
+     |
+  time-series / trace store (compaction, retention tiers)
+     |
+  dashboards and alerts
+compose:
+  - design.telemetry-pipeline => aggregation, batching and loss-tolerance as design rules
+  - design.observability => the four signals and their cost models
+  - design.backpressure => bounded buffers with an explicit drop policy
+  - design.load-shedding => shed samples, never block the application
+  - design.bounded-queue => buffer sizes chosen deliberately per hop
+  - design.worker-pool => collector concurrency and batch sizes tuned to the store
+  - k8s.daemon-set => one agent per node, including nodes added later
+  - k8s.resources.requests => agents get reserved capacity so they cannot starve apps
+  - k8s.hpa => scale the collector tier on ingest rate and queue depth
+  - rust.bounded-concurrency => batch flushes with a cap
+  - rust.tracing => structured fields with bounded cardinality
+failure_modes:
+  - unbounded label cardinality from user-controlled values (the usual root cause)
+  - agents blocking the application to flush telemetry
+  - no sampling, so the store's write path saturates during an incident (exactly when it is needed most)
+  - per-sample network calls instead of batching
+follow_ups:
+  - how do you keep telemetry alive during an incident that also breaks the collector?
+related:
+  - design.telemetry-pipeline
+  - design.observability
+  - recipe.event-ingestion
+sources:
+  - https://opentelemetry.io/docs/collector/
+  - https://prometheus.io/docs/practices/naming/

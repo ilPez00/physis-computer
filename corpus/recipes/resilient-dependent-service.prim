@@ -1,0 +1,51 @@
+id: recipe.resilient-dependent-service
+kind: recipe
+title: Service calling an unreliable dependency
+aliases: resilience against dependency, flaky upstream, degraded mode
+question: how would you design a service that depends on an unreliable third party?
+tags: architecture, resilience, reliability
+properties:
+  - bounded waiting on the dependency
+  - fail fast when it is clearly down
+  - a useful degraded answer instead of an error
+  - no retry amplification
+invariant: Treat the dependency as a failure source by default: bound every call, retry only idempotent operations with jitter, break the circuit, and have a degraded path that does not need it.
+answer_30s: Timeout every call, retry idempotently with jitter under a strict budget, open a breaker when the failure rate is high, and serve a cached or partial answer so the user still gets something useful.
+flow: |
+  request -> caller
+     |
+  budget: deadline (200ms) shared with the dependency
+     |
+  breaker closed? --no--> degraded response (cache / partial / queued)
+     | yes
+  attempt with timeout -> retry (jitter, cap 3)
+     |
+  failure rate over threshold -> breaker opens -> fail fast
+     |
+  metrics: timeout rate, breaker state, degraded rate
+compose:
+  - design.timeouts => the deadline that bounds all waiting
+  - design.retry-backoff => bounded, jittered retries on idempotent calls only
+  - design.circuit-breaker => stop paying the timeout cost when it is clearly down
+  - design.idempotency => safe retries and safe replay after recovery
+  - design.load-shedding => protect yourself when the dependency is slow, not just down
+  - design.observability => timeout rate and breaker state as first-class signals
+  - design.cache-aside => a stale cached answer is often the right degraded response
+  - rust.retry => the implementation shape of classified retries
+  - rust.timeout => the per-attempt bound
+  - rust.tower => the same policy for every outbound call
+failure_modes:
+  - retries without idempotency, duplicating the effect on a timeout
+  - no timeout, so a hanging dependency consumes the connection pool
+  - a degraded path that also calls the broken dependency
+  - layers of retries multiplying load onto a struggling dependency
+  - breaker that never closes because the threshold is absolute rather than rate-based
+follow_ups:
+  - the dependency is down for an hour: how does your error budget and user experience evolve?
+related:
+  - design.circuit-breaker
+  - design.retry-backoff
+  - design.timeouts
+sources:
+  - https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker
+  - https://sre.google/sre-book/addressing-cascading-failures/

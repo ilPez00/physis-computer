@@ -1,0 +1,40 @@
+id: k8s.hpa
+kind: kubernetes
+title: Horizontal Pod Autoscaler
+aliases: hpa, autoscaling
+tags: scaling, availability
+questions:
+  - how does autoscaling decide to add replicas?
+  - how do you scale on backlog instead of CPU?
+invariant: The HPA adjusts replica count toward a target metric ratio, bounded by min/max and by cooldowns.
+answer_30s: HPA polls a metric (usually CPU, or queue backlog through an external adapter) and scales replicas so the average hits the target ratio, clamped to minReplicas/maxReplicas.
+answer_2m: |
+  The controller computes desired = ceil(current * currentMetric / targetMetric),
+  with scale-up and scale-down stabilization windows to avoid flapping; it
+  writes to the workload's replica count, so the Deployment controller does the
+  actual work. Three prerequisites people miss: metrics-server (or an external
+  metrics adapter) must exist, every Pod must declare CPU requests for a
+  percentage target to mean anything, and scaling out only helps if the
+  bottleneck is per-replica CPU -- not the database, the queue, or a mutex.
+  Cluster capacity is the other limit: an HPA that wants 40 replicas on a
+  cluster with room for 20 just queues Pending Pods.
+when_to_use:
+  - stateless workloads with measurable per-replica saturation
+  - queue growth or backlog detected by an external metrics adapter
+avoid_when:
+  - stateful or single-writer bottlenecks; work that must be queued (scale the consumers, not the producers)
+commands:
+  - kubectl get hpa => current vs target metric and the current replica count
+  - kubectl describe hpa api => the exact scaling events and why a decision was made
+failure_modes:
+  - no resource requests, so the percentage target is meaningless
+  - maxReplicas set to the cluster limit, so scaling out is throttled by pending Pods
+  - scaling on CPU while the real bottleneck is a shared database
+follow_ups:
+  - how would you autoscale on queue depth instead of CPU?
+related:
+  - k8s.deployment
+  - k8s.resources.requests
+  - design.backpressure
+sources:
+  - https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/

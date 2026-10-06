@@ -1,0 +1,29 @@
+id: k8s.daemon-set
+kind: kubernetes
+title: DaemonSet
+aliases: daemonset, one pod per node
+tags: workloads, node agents
+questions:
+  - how do you run an agent on every node?
+invariant: Exactly one Pod per eligible node, including nodes added later.
+answer_30s: A DaemonSet places one Pod on every node matching its selector, and nodes that join later automatically get that Pod.
+answer_2m: |
+  The controller watches Nodes as well as Pods, so no scaling action is needed
+  when a node joins. Tolerations are how node-specific agents are allowed onto
+  tainted nodes, for example control-plane nodes. Typical uses: log shippers,
+  metric agents, CNI and CSI node plugins, kube-proxy.
+when_to_use:
+  - per-node agents and node-level device plugins
+avoid_when:
+  - you simply want N copies of a service
+commands:
+  - kubectl get daemonset -A => per-node agents and how many nodes are covered
+  - kubectl describe daemonset -n kube-system <agent> => which nodes were skipped and why
+failure_modes:
+  - no tolerations, so tainted nodes are silently uncovered
+  - resource requests too high for small nodes, leaving them uncovered
+related:
+  - k8s.node
+  - k8s.deployment
+sources:
+  - https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/

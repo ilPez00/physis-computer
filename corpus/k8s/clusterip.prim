@@ -1,0 +1,22 @@
+id: k8s.service.clusterip
+kind: kubernetes
+title: ClusterIP service
+aliases: cluster ip, internal service
+tags: networking, service
+questions:
+  - what happens when you create a ClusterIP service?
+invariant: A virtual IP reachable only from inside the cluster, load-balanced across ready endpoints.
+answer_30s: ClusterIP is the default Service type: a cluster-internal virtual IP plus DNS name mapping to the ready Pods.
+when_to_use:
+  - service-to-service traffic inside the cluster
+avoid_when:
+  - you need external access (Ingress or LoadBalancer)
+commands:
+  - kubectl get svc api -o yaml => confirm type, clusterIP and selector
+failure_modes:
+  - expecting a ClusterIP to be reachable from your laptop (use port-forward)
+related:
+  - k8s.service
+  - k8s.port-forward
+sources:
+  - https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types

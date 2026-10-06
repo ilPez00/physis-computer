@@ -1,0 +1,48 @@
+id: design.idempotency
+kind: design
+title: Idempotency
+aliases: idempotent, idempotency key, safe to retry
+tags: architecture, reliability, api
+questions:
+  - how do you make an operation safe to retry?
+  - how do you avoid double-processing a payment?
+invariant: An idempotent operation has the same effect whether it runs once or many times, which is what makes retries, redelivery and reconciliation safe.
+answer_30s: Make the operation addressable by a caller-supplied idempotency key, store the result of the first execution, and return that stored result for every repeat instead of acting again.
+answer_2m: |
+  Idempotency is the property that lets everything else work: retries after a
+  timeout (the write may have succeeded), at-least-once queues (redelivery is
+  normal), reconciliation loops (re-running is expected), and crash recovery
+  (resume from stored state). Three implementation shapes, in increasing order
+  of generality: naturally idempotent operations (set-to-value, PUT, upsert),
+  keyed deduplication (unique constraint or key table on the request id, storing
+  the response), and effectidempotent design (each step records that it
+  happened, so replay skips completed steps). The interview trap is claiming
+  "we retry, so it is safe" -- the retry is only safe because of one of the three
+  above, and the key table needs its own retention policy.
+when_to_use:
+  - any write reachable by retry, queue redelivery, controller reconciliation or user double-click
+minimal_example: |
+  POST /payments   Idempotency-Key: 8f3c...
+
+  begin
+      insert into idempotency(key, request_hash)      -- fails if key exists
+      perform the effect
+      update idempotency set response = ..., status = 'done'
+  commit
+  -- a replay with the same key returns the stored response, never a second effect
+failure_modes:
+  - a retry after a timeout that duplicates the write (no key, no unique constraint)
+  - a deduplication key without retention, so the table grows without bound
+  - deduplication keyed on the request body instead of a caller-generated id, so a legitimate repeat is treated as a duplicate
+follow_ups:
+  - what if the first attempt failed halfway?
+related:
+  - design.retry-backoff
+  - design.exactly-once
+  - design.state-machine
+  - k8s.reconciliation
+  - k8s.job
+  - recipe.async-job-processing
+sources:
+  - https://stripe.com/docs/api/idempotent_requests
+  - https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/

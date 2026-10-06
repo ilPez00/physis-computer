@@ -1,0 +1,33 @@
+id: k8s.controller
+kind: kubernetes
+title: Controller
+aliases: controller, operator, control loop
+tags: architecture, controllers
+questions:
+  - what is the difference between a controller and an operator?
+invariant: A controller is a reconciliation loop over a resource type; an operator is a controller that packages domain operational knowledge for one application.
+answer_30s: Every controller watches at least one resource, diffs desired against observed state and acts; an operator is a controller plus the domain knowledge (upgrades, backups, failover) for a specific system.
+answer_2m: |
+  The implementation shape is the same: informer/watch plus workqueue, a
+  reconcile function keyed by object identity, status writes to report
+  progress, and rate-limited requeue for retries. Built-in controllers own the
+  built-in kinds (Deployment, StatefulSet, Job, endpoints); custom controllers
+  own CRDs. What separates a good controller from a script is the same pair as
+  above: idempotence and level-triggered logic. Ownership references
+  (ownerReferences) are how garbage collection knows that deleting the parent
+  should delete the children -- which is also why a StatefulSet's PVCs survive:
+  they are not owned by it.
+when_to_use:
+  - encoding operational knowledge as code instead of runbooks
+commands:
+  - kubectl get events --field-selector involvedObject.kind=MyResource => what a custom controller decided
+failure_modes:
+  - fighting another controller over the same object (two writers, no single owner)
+  - not writing status, so failures are invisible to operators
+related:
+  - k8s.reconciliation
+  - k8s.desired-state
+  - k8s.api-server
+  - recipe.controller
+sources:
+  - https://kubernetes.io/docs/concepts/architecture/controller/

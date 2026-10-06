@@ -1,0 +1,28 @@
+id: quiz.arch.observability
+kind: quiz
+track: architecture
+title: Instrumenting a new service
+question: What do you instrument in a new service, and what would you alert on?
+expects:
+  - metrics
+  - logs
+  - traces
+  - cardinality
+  - alert on symptoms
+misuse:
+  - high cardinality labels => takes down the metrics backend
+  - alert on every cause => alerts get ignored during real incidents
+related:
+  - design.observability
+  - design.health-checking
+  - rust.tracing
+follow_ups:
+  - how do you join a log line to a trace to a metric?
+  - what is the first signal that a dependency is degrading?
+answer: |
+  Metrics for aggregates (rate, errors, duration, saturation per route and per
+  dependency, plus queue depth and pool waits) with low cardinality; structured
+  logs with a correlation id; sampled traces with propagated context. Alert on
+  symptoms with a runbook (error budget burn, p99 latency, backlog), keep
+  high-cardinality values out of labels, and make sure probes and alerts tell
+  you the difference between "slow" and "down".

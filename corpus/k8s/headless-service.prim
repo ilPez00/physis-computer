@@ -1,0 +1,25 @@
+id: k8s.headless-service
+kind: kubernetes
+title: Headless Service
+aliases: headless service, clusterIP None
+tags: networking, discovery, stateful
+questions:
+  - why does a StatefulSet need a headless service?
+  - what changes when you choose a StatefulSet over a Deployment?
+invariant: With clusterIP None there is no virtual IP and no load balancing; DNS returns the Pod IPs directly.
+answer_30s: A headless Service publishes per-Pod DNS records instead of a single virtual IP, which is what gives each StatefulSet replica an addressable name.
+answer_2m: |
+  `db-0.db.default.svc.cluster.local` resolves to that specific Pod. Clients
+  that need to address individual replicas (replication, quorum, sharding) get
+  what they need; clients that just need to reach a random replica get the
+  normal ClusterIP Service. Both are commonly deployed over the same Pods at
+  once -- headless for peer traffic, ClusterIP for client traffic.
+when_to_use:
+  - StatefulSet peer discovery, custom client-side load balancing
+avoid_when:
+  - plain request distribution (the client would have to load balance itself)
+related:
+  - k8s.stateful-set
+  - k8s.dns-service-discovery
+sources:
+  - https://kubernetes.io/docs/concepts/services-networking/service/#headless-services

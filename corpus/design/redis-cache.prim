@@ -1,0 +1,43 @@
+id: design.redis-cache
+kind: design
+title: Redis as cache and coordination store
+aliases: redis, redis cache, key value store
+tags: caching, infrastructure, state
+questions:
+  - how would you use Redis in a system?
+invariant: Redis is an in-memory, single-threaded-per-shard key/value store: excellent for derived, volatile state and coordination, dangerous as a system of record without persistence and a plan.
+answer_30s: Use Redis for cache entries with TTLs, rate-limit counters, sessions, idempotency keys and simple locks -- data you can rebuild or lose -- and keep the durable record elsewhere. Redis is not the source of truth.
+answer_2m: |
+  What Redis is good at follows from its model: every command is atomic because
+  execution is single-threaded per shard, which is why INCR, SETNX and Lua
+  scripts are the building blocks for counters, locks and rate limiters. What to
+  watch: latency spikes come from big KEYS or SCAN-like commands on the main
+  thread, which is why you use separate databases or instances for cache and
+  coordination, memory is finite so eviction policy (allkeys-lru vs noeviction)
+  is a correctness decision, and persistence (RDB/AOF) reduces but does not
+  remove the possibility of losing recent writes. A cache is not a queue: use a
+  stream or a real broker for work that must not be lost, and treat every Redis
+  read as "may be absent", never as "must be present".
+when_to_use:
+  - caching hot reads, counters, rate limits, sessions, short-lived locks, idempotency keys
+avoid_when:
+  - as the only store for data you cannot reconstruct; for durable queues; for large blobs
+commands:
+  - redis-cli --latency => is the instance's command latency healthy
+  - redis-cli info memory => used_memory, evicted_keys and fragmentation in one place
+  - redis-cli info stats => keyspace_hits/misses for the cache hit ratio (hits/(hits+misses))
+  - redis-cli --bigkeys => which keys are large enough to cause latency spikes
+failure_modes:
+  - cache treated as authoritative, so an eviction or flush becomes data loss
+  - the same instance serving cache and locks, so eviction breaks coordination
+  - a single instance with no replica, so a restart is a cold-cache stampede on the database
+follow_ups:
+  - how do you avoid a cold-cache stampede after a Redis restart?
+related:
+  - design.cache-aside
+  - design.cache-invalidation
+  - design.distributed-locking
+  - design.rate-limiting
+  - recipe.redis-backed-service
+sources:
+  - https://redis.io/docs/manual/patterns/

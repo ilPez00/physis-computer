@@ -1,0 +1,35 @@
+id: rust.tokio-watch
+kind: rust
+title: tokio::sync::watch
+aliases: watch channel, latest value, config reload
+tags: async, channels, configuration
+questions:
+  - how do you propagate a config change to every running task?
+invariant: watch holds exactly one latest value; receivers observe changes and can always read the current value, so late readers stay correct.
+answer_30s: watch is a single-slot broadcast for state that only has a "latest" version: config snapshots, feature flags, shutdown flags.
+when_to_use:
+  - config or flag distribution, latest-state publishers, shutdown flags
+avoid_when:
+  - every message must be processed (use broadcast or mpsc)
+minimal_example: |
+  use tokio::sync::watch;
+
+  let (tx, mut rx) = watch::channel(Config::default());
+
+  tokio::spawn(async move {
+      while rx.changed().await.is_ok() {
+          let cfg = rx.borrow().clone();
+          tracing::info!(?cfg, "config reloaded");
+      }
+  });
+
+  tx.send(new_config)?; // latest value wins
+failure_modes:
+  - using watch for events, so intermediate values are silently skipped
+  - sending before any receiver exists, so the first update is missed
+related:
+  - rust.tokio-broadcast
+  - rust.tokio-mpsc
+  - design.cache-invalidation
+sources:
+  - https://docs.rs/tokio/latest/tokio/sync/watch/index.html

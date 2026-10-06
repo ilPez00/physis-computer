@@ -1,0 +1,33 @@
+id: rust.raii
+kind: rust
+title: RAII and Drop
+aliases: RAII, Drop, guards
+tags: ownership, resource management
+questions:
+  - how do you guarantee a resource is released in Rust?
+invariant: Destructors run when a value leaves scope, on early return and on panic unwind, so release logic belongs in Drop.
+answer_30s: RAII ties release to scope: locks, permits, transactions and file handles release when their guard drops, including on error and panic paths.
+answer_2m: |
+  This is why the async primitives are shaped the way they are: a
+  SemaphorePermit, a MutexGuard and a transaction guard all release on drop, so
+  cancellation and error paths cannot leak the resource. Two honest limits:
+  Drop does not run on process abort (crash cleanup is the orchestrator's job),
+  and Drop must not block or await. For explicit ordering, scope blocks and
+  drop() calls are the tool.
+when_to_use:
+  - locks, permits, transactions, temp files, tracing spans
+avoid_when:
+  - hiding blocking or fallible cleanup in Drop (use an explicit close called on both paths)
+minimal_example: |
+  let permit = semaphore.clone().acquire_owned().await?; // acquired
+  do_work().await?;                                      // may fail or be cancelled
+  drop(permit);                                          // released, always
+failure_modes:
+  - relying on Drop for durable cleanup that a process kill would skip
+  - blocking work inside Drop on a runtime thread
+related:
+  - rust.tokio-semaphore
+  - rust.mutex
+  - rust.ownership-move
+sources:
+  - https://doc.rust-lang.org/std/ops/trait.Drop.html

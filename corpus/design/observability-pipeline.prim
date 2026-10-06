@@ -1,0 +1,43 @@
+id: design.telemetry-pipeline
+kind: design
+title: Telemetry pipeline
+aliases: telemetry, metrics pipeline, high throughput ingest
+tags: architecture, observability, scale
+questions:
+  - how would you ingest 100k metrics per second?
+invariant: High-volume telemetry must be aggregated and batched as early as possible, and losing some samples is acceptable by design.
+answer_30s: Batch and aggregate at the agent, ship with bounded buffers and sampling, aggregate again at the collector, and accept loss under pressure because telemetry is not a system of record.
+answer_2m: |
+  The design differs from a transactional pipeline in one important way: loss is
+  allowed, so every stage can shed load. That makes the problem tractable:
+  agents aggregate (counters, histograms) so 100k samples/s become far fewer
+  series/s; collectors batch writes and can drop or sample under pressure;
+  storage is dimensional and expects high write throughput with compaction, not
+  per-row updates. Cardinality is the real capacity limit, not volume: a label
+  with unbounded values multiplies series count and takes down the metrics
+  backend, so the agent side must enforce label policy. Numeric maths: 100k
+  samples/s at a few bytes each is only a few MB/s, so if the system struggles
+  it is almost always cardinality, per-sample overhead or an unbuffered hop, not
+  raw bytes.
+when_to_use:
+  - metrics, traces and logs at fleet scale; anything whose consumer tolerates sampling
+avoid_when:
+  - business events where loss is unacceptable (that is an event pipeline with durability)
+minimal_example: |
+  apps (aggregate in-process)
+    -> agents on nodes (batch, bounded buffer, drop on overflow)
+    -> collectors (batch, cardinality limits, sampling)
+    -> time-series store (compaction, retention tiers)
+failure_modes:
+  - unbounded label cardinality, which is what actually takes down metrics backends
+  - no shedding policy, so backpressure from the store blocks the application
+  - per-sample network writes instead of batching
+related:
+  - design.observability
+  - design.backpressure
+  - design.load-shedding
+  - design.bounded-queue
+  - recipe.high-throughput-telemetry
+sources:
+  - https://prometheus.io/docs/practices/naming/
+  - https://opentelemetry.io/docs/collector/

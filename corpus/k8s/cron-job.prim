@@ -1,0 +1,31 @@
+id: k8s.cron-job
+kind: kubernetes
+title: CronJob
+aliases: cronjob, scheduled job
+tags: workloads, batch, schedule
+questions:
+  - how do you schedule a recurring task?
+invariant: A CronJob creates a Job on a cron schedule, with an explicit concurrency and history policy.
+answer_30s: CronJob is a scheduler over Job objects: a cron expression creates Jobs, and concurrencyPolicy decides what happens when the previous run is still going.
+answer_2m: |
+  The important knobs are the failure semantics rather than the schedule:
+  concurrencyPolicy Allow/Forbid/Replace decides overlap, startingDeadlineSeconds
+  decides whether a missed window is still launched, and the Job's own
+  backoffLimit and activeDeadlineSeconds decide retries. A CronJob does not
+  replay missed windows unless a deadline is configured, which is the usual
+  follow-up question after an outage.
+when_to_use:
+  - periodic cleanup, report generation, cache warming
+avoid_when:
+  - work that must be exactly-once (cron is at-most-once per window; make the task idempotent)
+commands:
+  - kubectl get cronjobs -A => schedule, last schedule time, suspended state
+  - kubectl get jobs --sort-by=.metadata.creationTimestamp => which scheduled run produced which Job
+failure_modes:
+  - overlapping runs mutating the same data (the default concurrencyPolicy is Allow)
+  - missed windows after control-plane downtime
+related:
+  - k8s.job
+  - design.idempotency
+sources:
+  - https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/

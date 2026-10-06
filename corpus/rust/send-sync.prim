@@ -1,0 +1,34 @@
+id: rust.send-sync
+kind: rust
+title: Send and Sync
+aliases: Send, Sync, marker traits
+tags: concurrency, fundamentals
+questions:
+  - what do Send and Sync mean?
+invariant: Send allows moving a value to another thread; Sync allows sharing references from another thread (so &T is Send).
+answer_30s: Send means ownership can cross a thread boundary and Sync means shared references can; both are auto traits derived from the fields.
+answer_2m: |
+  The useful skill is reading the negative case. Rc is neither Send nor Sync
+  (non-atomic counter); Cell and RefCell are Send but not Sync (interior
+  mutability without synchronisation); a std MutexGuard is not Send, which is
+  exactly why holding one across an await breaks tokio::spawn. When the compiler
+  reports that a future is not Send, remove the non-Send value from the future
+  (usually by shrinking a guard's scope) -- never with `unsafe impl Send`.
+when_to_use:
+  - reading compiler errors about futures, spawn and thread boundaries
+minimal_example: |
+  fn assert_send<T: Send>(_: &T) {}
+  fn assert_sync<T: Sync>(_: &T) {}
+
+  assert_send(&std::sync::Arc::new(1u32));
+  assert_sync(&std::sync::Arc::new(1u32));
+  // assert_send(&std::rc::Rc::new(1u32)); // Rc is not Send
+failure_modes:
+  - silencing a not-Send error with unsafe impl Send, hiding a data race
+  - assuming RefCell is fine because single-threaded tests compile
+related:
+  - rust.arc
+  - rust.mutex-across-await
+  - rust.tokio-spawn
+sources:
+  - https://doc.rust-lang.org/nomicon/send-and-sync.html

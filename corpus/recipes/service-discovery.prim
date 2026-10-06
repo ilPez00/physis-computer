@@ -1,0 +1,45 @@
+id: recipe.service-discovery
+kind: recipe
+title: Multi-node service discovery
+aliases: service discovery across nodes, multi node addressing, find peers
+question: how do services find each other across many nodes?
+tags: architecture, networking, discovery
+properties:
+  - addressing independent of pod lifetime
+  - health reflected in the address set
+  - no hardcoded endpoints
+  - a plan for discovery being unavailable
+invariant: Callers use stable names that resolve to the current healthy set, so scaling and replacement are invisible to them.
+answer_30s: Use Kubernetes Services for stable names and readiness-filtered endpoints, headless Services when clients need per-replica addresses, and cache the last known endpoint set so a discovery blip does not break data paths.
+flow: |
+  caller -> name (Service DNS / registry)
+     |
+  resolver -> healthy endpoint set (readiness-filtered)
+     |
+  server-side LB (ClusterIP / ingress) or client-side LB (headless)
+     |
+  unhealthy / unready replicas are removed automatically
+compose:
+  - design.service-discovery => the two models (server-side and client-side) and their trade-offs
+  - k8s.service => stable virtual address in front of changing pods
+  - k8s.endpoints => the actual address set, the thing to debug first
+  - k8s.dns-service-discovery => names, search domains, and their failure modes
+  - k8s.headless-service => per-replica DNS for peer-aware workloads
+  - k8s.probe.readiness => readiness is what removes a bad replica from the set
+  - design.health-checking => what "healthy" means for discovery
+  - k8s.ingress => the L7 entry point when discovery is for clients outside the cluster
+  - k8s.namespace => scoping of names and cross-namespace resolution
+failure_modes:
+  - hardcoded IPs or per-environment host lists
+  - short DNS names resolving across namespaces unexpectedly
+  - readiness that does not reflect serving ability, so endpoints lie
+  - DNS caching with a long TTL, so traffic keeps going to a replaced pod
+  - no cached fallback, so a DNS or control-plane outage breaks working data paths
+follow_ups:
+  - how would a client-side load balancing approach change your failure handling?
+related:
+  - design.service-discovery
+  - k8s.service
+  - k8s.headless-service
+sources:
+  - https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/

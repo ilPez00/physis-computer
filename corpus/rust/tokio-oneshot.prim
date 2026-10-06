@@ -1,0 +1,29 @@
+id: rust.tokio-oneshot
+kind: rust
+title: tokio::sync::oneshot
+aliases: oneshot, reply channel
+tags: async, channels
+questions:
+  - how does a spawned task return a value to its caller?
+invariant: oneshot carries exactly one value from one sender to one receiver; dropping the sender makes the receiver resolve with an error instead of hanging.
+answer_30s: oneshot is the request/response channel: the caller awaits the receiver, the task replies once, and a dropped sender becomes an observable error.
+answer_2m: |
+  Typical use is a reply handle inside a message: a job carries a oneshot::Sender
+  so the worker answers the specific waiter instead of broadcasting. Two details
+  worth stating: send consumes the sender, so replying exactly once is a
+  compile-time guarantee, and a dropped sender turns "the worker died" into an
+  observable event rather than a stuck request. Pair it with a timeout to bound
+  how long the caller waits for the reply.
+when_to_use:
+  - returning a result to one waiter, bridging callback APIs into async, shutdown acknowledgements
+avoid_when:
+  - multiple replies, multiple listeners, or fire-and-forget semantics
+minimal_example: |
+  let (tx, rx) = tokio::sync::oneshot::channel::<Result<Response, AppError>>();
+  queue.send(Job { payload, reply: tx }).await?;
+  let response = tokio::time::timeout(Duration::from_secs(5), rx).await??;
+related:
+  - rust.tokio-mpsc
+  - rust.timeout
+sources:
+  - https://docs.rs/tokio/latest/tokio/sync/oneshot/index.html

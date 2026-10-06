@@ -1,0 +1,26 @@
+id: quiz.rust.bounded-concurrency
+kind: quiz
+track: rust
+title: Bounding concurrency
+question: You need to process 10k items against an upstream API. How do you do it without falling over?
+expects:
+  - semaphore
+  - bounded
+  - backpressure
+  - timeout
+  - retry jitter
+misuse:
+  - unbounded spawn => memory grows with input and the upstream is hammered
+  - join all => unbounded fan-out in disguise
+related:
+  - rust.bounded-concurrency
+  - rust.tokio-semaphore
+  - rust.retry
+  - design.backpressure
+follow_ups:
+  - what happens when the upstream starts returning 429?
+answer: |
+  Stream with buffered/buffer_unordered or a Semaphore permit per item, so at
+  most N are in flight; timeouts per attempt, jittered retries on idempotent
+  calls, and a total budget. On 429, slow down (respect Retry-After) and shed
+  rather than queue.

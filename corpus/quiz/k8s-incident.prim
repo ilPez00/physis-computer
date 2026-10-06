@@ -1,0 +1,26 @@
+id: quiz.k8s.incident
+kind: quiz
+track: kubernetes
+title: First five minutes of an incident
+question: Users report 500s from a Kubernetes service. What do you do first?
+expects:
+  - scope
+  - events
+  - endpoints
+  - logs previous
+  - rollback
+misuse:
+  - restart everything => destroys evidence and may widen the outage
+  - assume networking => skipping the workload layer wastes the first minutes
+related:
+  - k8s.debugging-workflow
+  - k8s.events
+  - k8s.endpoints
+  - k8s.rollback
+  - recipe.incident-diagnosis
+follow_ups:
+  - how would you find the cause if the pods were already replaced?
+answer: |
+  Scope it (which routes, which replicas, since when), then read state before
+  acting: replicas desired vs ready, events sorted by time, container state, and
+  whether the Service has endpoints. Only then choose rollback or fix-forward.

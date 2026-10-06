@@ -1,0 +1,22 @@
+id: k8s.probe.startup
+kind: kubernetes
+title: Startup probe
+aliases: startup, startupProbe
+tags: operations, health
+questions:
+  - how do you probe slowly starting applications without weakening liveness?
+invariant: A startup probe suspends liveness and readiness checks until the process has finished booting.
+answer_30s: A startup probe gives a slow-booting process a larger one-off budget and disables liveness/readiness until it passes.
+answer_2m: |
+  It exists to remove a compromise: without it you either set a huge
+  initialDelaySeconds (which weakens liveness forever) or a short one (which
+  crash-loops slow starts). Set the startup probe to the worst-case boot time;
+  once it passes, liveness takes over with tight thresholds. Typical for
+  legacy JVMs, migrations on boot, and large model loads.
+when_to_use:
+  - slow or variable startup plus a strict liveness policy
+related:
+  - k8s.probe.liveness
+  - k8s.probe.readiness
+sources:
+  - https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/

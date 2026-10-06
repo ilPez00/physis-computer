@@ -1,0 +1,53 @@
+id: recipe.local-to-kubernetes
+kind: recipe
+title: Local development to Kubernetes
+aliases: local to kubernetes, dev workflow, parity, inner loop
+question: how do you go from a service running on your laptop to running it in Kubernetes?
+tags: architecture, workflow, kubernetes
+properties:
+  - the same artifact runs locally and in the cluster
+  - configuration injected, not baked into the image
+  - the inner loop is seconds, not minutes
+  - cluster-only behaviour caught before the first deploy
+invariant: One image, many environments: build the same artifact, inject all configuration, and make the local loop fast enough to run the checks that only the cluster can fail.
+answer_30s: Containerise once, keep configuration external (env, ConfigMap, Secret), run the same image locally with the same entrypoint, and rehearse the cluster-only risks -- probes, shutdown, DNS, resource limits -- before the first deploy.
+flow: |
+  code -> build image (same image for every environment)
+     |
+  local run: docker/compose or mirrord-style traffic interception into a real pod
+     |
+  configuration: env + ConfigMap/Secret mounted, never baked in
+     |
+  pre-deploy rehearsal: readiness probe path, SIGTERM drain, DNS names, resource limits
+     |
+  deploy: rollout, observe endpoints, rollback if needed
+compose:
+  - k8s.configmap => environment configuration injected rather than built into the image
+  - k8s.secret => credentials never baked into the image or committed
+  - k8s.probe.readiness => the health path must exist before the first rollout
+  - k8s.probe.liveness => the same for restart behaviour
+  - k8s.resources.requests => local "it runs" is not the same as a container with 256Mi
+  - k8s.resources.limits => memory limits expose leaks and working-set mistakes locally
+  - k8s.dns-service-discovery => service names do not resolve on a laptop; plan for it
+  - k8s.port-forward => reach a cluster dependency from local code without exposing it
+  - k8s.logs => the first place to look when the deployed container behaves differently
+  - k8s.deployment.rolling-update => the deploy path you are rehearsing
+  - design.graceful-shutdown => shutdown behaviour is a cluster-only failure mode
+  - design.schema-migration => local databases rarely match production schema state
+  - recipe.zero-downtime-deploy => the rollout you are about to do
+failure_modes:
+  - configuration baked into the image, so environments cannot differ safely
+  - no readiness endpoint, so the first rollout takes traffic to an unready process
+  - local-only assumptions (hostnames, paths, writable filesystem) failing in the cluster
+  - resource requests invented at deploy time, so pods are evicted or Pending
+  - long bake-and-push loops, so the checks that matter are skipped under time pressure
+follow_ups:
+  - how would you debug a container that works locally but crashes in the cluster?
+related:
+  - k8s.configmap
+  - k8s.secret
+  - k8s.port-forward
+  - recipe.zero-downtime-deploy
+sources:
+  - https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/
+  - https://kubernetes.io/docs/tasks/debug/

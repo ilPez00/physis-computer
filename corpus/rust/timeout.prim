@@ -1,0 +1,40 @@
+id: rust.timeout
+kind: rust
+title: Timeouts
+aliases: timeout, deadline, tokio::time::timeout
+tags: async, resilience
+questions:
+  - how do you add a timeout to an async call?
+invariant: A timeout bounds how long the caller waits; it does not guarantee the underlying work stopped.
+answer_30s: Wrap the future in tokio::time::timeout or race a sleep in select!, and treat the timeout as its own error because the work may still be running.
+answer_2m: |
+  The subtlety that earns points: the timeout cancels the local future, but the
+  remote side may still be executing, so a retry can duplicate the operation --
+  timeouts and retries must be paired with idempotency rather than applied
+  independently. Choose the value from the caller's remaining budget, not from a
+  round number, and make inner timeouts strictly smaller than outer ones,
+  otherwise an inner layer outlives the caller that already gave up. Track
+  timeouts separately from errors in metrics: a cascade usually shows as rising
+  timeouts, and it needs a different response than a rising error rate.
+when_to_use:
+  - every outbound call to another service, database or queue
+avoid_when:
+  - as a substitute for fixing a slow dependency (failing faster is still failing)
+minimal_example: |
+  let res = tokio::time::timeout(Duration::from_millis(300), client.get(url)).await;
+  match res {
+      Ok(Ok(body)) => Ok(body),
+      Ok(Err(e)) => Err(AppError::Upstream(e)), // real error
+      Err(_elapsed) => Err(AppError::Timeout),  // budget exhausted
+  }
+failure_modes:
+  - timeout plus retry without idempotency, duplicating a write
+  - an inner timeout longer than the caller's deadline, so work continues after the caller gave up
+  - no timeout at all, so one stuck dependency exhausts the connection pool
+related:
+  - rust.tokio-select
+  - design.timeouts
+  - design.retry-backoff
+  - design.circuit-breaker
+sources:
+  - https://docs.rs/tokio/latest/tokio/time/fn.timeout.html

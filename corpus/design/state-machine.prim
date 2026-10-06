@@ -1,0 +1,39 @@
+id: design.state-machine
+kind: design
+title: State machine
+aliases: state machine, fsm, explicit states
+tags: architecture, modelling
+questions:
+  - how do you model a job that moves through stages?
+invariant: Enumerate states and legal transitions, store the current state, and make every transition idempotent.
+answer_30s: Model the entity as states plus allowed transitions, persist the state, and let each transition be safe to repeat -- which is what makes retries and restarts tractable.
+answer_2m: |
+  The value is not diagrams, it is that illegal transitions become impossible to
+  express: a job cannot be both running and completed, a payment cannot skip
+  authorised. Persisting the state gives recovery for free (a crashed worker
+  resumes from the stored state), gives the operator a vocabulary to query
+  ("show everything stuck in awaiting_webhook"), and gives retries a defined
+  meaning. Complement it with a terminal-state table and a timeout per
+  non-terminal state, because the most common real bug is an entity that has
+  silently stopped advancing.
+when_to_use:
+  - job lifecycles, payments, order fulfilment, provisioning, controllers
+minimal_example: |
+  pending -> running -> succeeded
+      |          |
+      |          +-> failed -> retrying -> running
+      +-> cancelled
+
+  transitions: explicit table; each guarded by the current state
+  store: current state + updated_at (for stuck detection)
+failure_modes:
+  - status as a free-text column, so illegal transitions reach production
+  - no timeout on non-terminal states, so stuck entities are only found by users
+  - transitions with side effects that are not idempotent, so retries duplicate them
+related:
+  - design.idempotency
+  - design.retry-backoff
+  - recipe.async-job-processing
+  - k8s.reconciliation
+sources:
+  - https://martinfowler.com/articles/patterns-of-distributed-systems/state-watch.html
