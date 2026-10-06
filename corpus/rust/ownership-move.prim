@@ -1,0 +1,20 @@
+id: rust.ownership-move
+kind: rust
+title: Ownership and moves in server code
+aliases: ownership, move semantics, borrow checker
+tags: ownership, fundamentals
+questions:
+  - why does the compiler say my value was moved?
+invariant: One owner per value; passing by value moves it, borrowing is a loan the compiler tracks.
+answer_30s: Moves are the default for non-Copy types, so a value handed to a task or struct is no longer yours; clones and references are deliberate alternatives.
+when_to_use:
+  - struct and function signatures, deciding clone versus borrow versus take
+failure_modes:
+  - cloning a large payload per request to satisfy the borrow checker
+  - moving a value into a spawned task and then trying to use it afterwards
+related:
+  - rust.borrow-lifetimes
+  - rust.arc
+  - rust.tokio-spawn
+sources:
+  - https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html

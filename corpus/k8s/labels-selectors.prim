@@ -1,0 +1,33 @@
+id: k8s.labels-selectors
+kind: kubernetes
+title: Labels and selectors
+aliases: labels, selectors, matchLabels
+tags: operations, discovery
+questions:
+  - how do objects find each other in Kubernetes?
+invariant: Controllers, Services and policy select objects by label equality or set expressions, never by name.
+answer_30s: Labels are key/value metadata and selectors are the queries over them; every relationship in Kubernetes (Service to Pods, Deployment to ReplicaSets, NetworkPolicy to Pods) is a selector match.
+answer_2m: |
+  This is the binding mechanism of the declarative model, so most "nothing is
+  connected" bugs are selector bugs. Deployment selectors are immutable after
+  creation, which is why a wrong one means recreating the object rather than
+  patching it. Use consistent label conventions (app.kubernetes.io/name,
+  /instance, /version) because they are also the query interface for
+  operations: `-l app=api,version!=v2` is how you scope a rollout, a log read,
+  or a delete. Overlapping selectors between two controllers is a real failure
+  mode -- two ReplicaSets can fight over the same Pods.
+when_to_use:
+  - every object; they are the addressing scheme
+commands:
+  - kubectl get pods -l app=api,version=v2 => only the replicas of one version
+  - kubectl get all -l app=api => every object belonging to one application
+  - kubectl get pods --show-labels => what labels actually landed on the Pods
+failure_modes:
+  - Service selector does not match Pod template labels, so endpoints stay empty
+  - overlapping selectors between workloads, causing controllers to steal Pods
+related:
+  - k8s.service
+  - k8s.deployment
+  - k8s.namespace
+sources:
+  - https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/

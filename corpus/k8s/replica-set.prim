@@ -1,0 +1,29 @@
+id: k8s.replica-set
+kind: kubernetes
+title: ReplicaSet
+aliases: rs, replica set
+tags: workloads, controllers
+questions:
+  - what does a ReplicaSet do?
+invariant: A ReplicaSet maintains a set of identical Pods matching a selector.
+answer_30s: A ReplicaSet keeps exactly N Pods matching its selector alive; a Deployment creates one ReplicaSet per template version to move traffic between versions.
+answer_2m: |
+  The reconciliation is: count Pods matching the selector, compare with the
+  declared replicas, create or delete the difference. You almost never create
+  one by hand; you read them to understand a rollout (old ReplicaSet draining,
+  new ReplicaSet growing) and to roll back.
+when_to_use:
+  - reading rollout state; never as a top-level object in normal practice
+avoid_when:
+  - you want versioned rollouts (use Deployment)
+commands:
+  - kubectl get rs -o wide => which ReplicaSets exist and their desired/ready counts
+  - kubectl describe rs/api-7d9f => why this ReplicaSet is not scaling as expected
+failure_modes:
+  - two ReplicaSets fighting over Pods with overlapping selectors
+related:
+  - k8s.deployment
+  - k8s.pod
+  - k8s.deployment.rolling-update
+sources:
+  - https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/

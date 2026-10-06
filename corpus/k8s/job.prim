@@ -1,0 +1,31 @@
+id: k8s.job
+kind: kubernetes
+title: Job
+aliases: job, batch workload
+tags: workloads, batch
+questions:
+  - how do you run a batch task in Kubernetes?
+invariant: A Job runs Pods until a declared number of successful completions is reached.
+answer_30s: A Job is a run-to-completion workload: it tracks successes and retries failures until `completions` is reached.
+answer_2m: |
+  Unlike a Deployment, termination is success. Retry behaviour is the
+  controller's job: backoffLimit bounds retries, activeDeadlineSeconds bounds
+  total runtime, and restartPolicy Never keeps failed Pods around for
+  inspection. Parallelism is declared, not inferred -- which is the part
+  interviewers probe: a Job that needs an external queue, or an idempotent unit
+  of work, cannot get either from the Job itself.
+when_to_use:
+  - migrations, one-shot batch processing, explicit retry accounting
+avoid_when:
+  - the workload must always be running
+commands:
+  - kubectl get jobs -A => which batch runs are incomplete or failing
+  - kubectl logs job/db-migrate => why the last attempt failed
+failure_modes:
+  - non-idempotent task retried after a partial success
+  - backoffLimit exceeded, so the Job fails silently until somebody looks
+related:
+  - k8s.cron-job
+  - design.idempotency
+sources:
+  - https://kubernetes.io/docs/concepts/workloads/controllers/job/

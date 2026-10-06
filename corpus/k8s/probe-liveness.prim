@@ -1,0 +1,33 @@
+id: k8s.probe.liveness
+kind: kubernetes
+title: Liveness probe
+aliases: liveness, livenessProbe
+tags: operations, availability, health
+questions:
+  - when should a liveness probe fail?
+invariant: A failing liveness probe restarts the container; it answers "is this process wedged", never "is a dependency down".
+answer_30s: A liveness probe restarts a container that is stuck (deadlock, exhausted pool); it must not fail because a dependency is down, or you get restart storms.
+answer_2m: |
+  The consequences differ from readiness: a failure here kills the process.
+  That means the probe has to be a signal about the process itself -- can it
+  still make progress -- not about the world around it. Cascading-failure
+  pattern: database slow -> liveness fails -> every replica restarts -> cold
+  caches -> database slower. If restart is unlikely to fix it, restart is
+  unlikely to be the right remedy; readiness plus alerting is usually the
+  correct pair.
+when_to_use:
+  - long-running processes that can deadlock or leak into wedged state
+avoid_when:
+  - the failure is in a dependency (that is readiness plus backpressure)
+commands:
+  - kubectl get pods => RESTARTS climbing is the liveness fingerprint
+  - kubectl describe pod api-... => which probe failed and with what exit code
+failure_modes:
+  - liveness depending on a shared dependency, restarting healthy replicas
+  - initialDelay too short for the process to boot, causing crash loop
+related:
+  - k8s.probe.readiness
+  - k8s.probe.startup
+  - design.observability
+sources:
+  - https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/

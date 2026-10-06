@@ -1,0 +1,37 @@
+id: design.connection-pool
+kind: design
+title: Connection pooling
+aliases: connection pool, pool sizing, connection management
+tags: database, performance, reliability
+questions:
+  - how many database connections should a service use?
+invariant: A connection pool is a concurrency limit on a shared resource; its size is bounded by the resource, not by the client's parallelism.
+answer_30s: Pool at one shared instance per process, size it from the database's capacity divided by replicas, set acquire and idle timeouts, and treat waiting for a connection as backpressure.
+answer_2m: |
+  The arithmetic that interviewers want: connections are not free on the
+  database side (memory, scheduler slots, lock contention), so
+  total_connections = replicas * pool_size must stay below the database's limit,
+  and a smaller pool with queueing in the application is usually faster than a
+  large pool with thrashing. Timeouts are the safety net: an acquire timeout
+  turns "everything is slow" into "some requests fail fast", and idle timeouts
+  release connections after a burst. Pool saturation is a metric you should
+  alert on, because it is the earliest visible sign that a dependency is
+  degrading, before latency and error rate move. For services calling other
+  services the same reasoning applies to the HTTP client's connection pool and
+  keep-alive settings.
+when_to_use:
+  - every database or broker client; pooled HTTP clients for outbound calls
+failure_modes:
+  - pool per request, so pooling is defeated and connections churn
+  - replicas * pool_size exceeding the database's max_connections
+  - no acquire timeout, so a slow database becomes unbounded request latency
+  - long-running transactions holding connections while the pool empties
+related:
+  - rust.connection-pool
+  - design.backpressure
+  - design.timeouts
+  - rust.app-state
+  - recipe.database-backed-api
+sources:
+  - https://docs.rs/sqlx/latest/sqlx/struct.Pool.html
+  - https://wiki.postgresql.org/wiki/Number_Of_Database_Connections

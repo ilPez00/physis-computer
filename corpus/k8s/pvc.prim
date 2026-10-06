@@ -1,0 +1,34 @@
+id: k8s.pvc
+kind: kubernetes
+title: PersistentVolumeClaim
+aliases: pvc, persistent volume claim
+tags: storage, state
+questions:
+  - how does a pod get durable storage?
+invariant: A PVC is a request for storage that binds to a PersistentVolume (statically or dynamically) and survives Pod rescheduling.
+answer_30s: A PVC declares size and access mode; a StorageClass provisions a PV for it, and the Pod mounts the claim, not the disk.
+answer_2m: |
+  Two controllers are involved: dynamic provisioning creates the PV when the
+  claim appears, and attachment only happens when a Pod that uses the claim is
+  scheduled onto a node -- which is why a ReadWriteOnce volume pins a Pod to one
+  node at a time. Reclaim policy and StatefulSet ownership are the follow-ups:
+  deleting a StatefulSet does not delete its PVCs, which is deliberate, and
+  scaling down does not either.
+when_to_use:
+  - databases, uploads, anything that must survive a Pod
+avoid_when:
+  - caches and derived data (a volume is a liability you must back up)
+commands:
+  - kubectl get pvc -A => which claims exist and their binding status
+  - kubectl describe pvc data-db-0 => why a claim is Pending (no storage class, no capacity, access mode mismatch)
+  - kubectl get pv => which backing volumes are bound or Released
+failure_modes:
+  - claim Pending because no default StorageClass exists
+  - ReadWriteOnce expected to be shared between nodes
+  - node lost while a ReadWriteMany-less volume was attached, delaying rescheduling
+related:
+  - k8s.storage-class
+  - k8s.stateful-set
+  - k8s.volume
+sources:
+  - https://kubernetes.io/docs/concepts/storage/persistent-volumes/

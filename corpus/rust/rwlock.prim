@@ -1,0 +1,37 @@
+id: rust.rwlock
+kind: rust
+title: RwLock
+aliases: rwlock, read write lock
+tags: concurrency, sync
+questions:
+  - when is RwLock better than Mutex?
+invariant: RwLock allows many readers or one writer, so it wins only when reads dominate and the read path is non-trivial.
+answer_30s: RwLock lets many readers proceed in parallel while serializing writers, so it pays off on read-mostly hot paths and loses on write-heavy or trivially short sections.
+answer_2m: |
+  The cost model is the answer: an RwLock has more bookkeeping than a mutex,
+  and with many concurrent readers the lock's own cache line becomes the
+  bottleneck. Most request paths are fine with a Mutex because the critical
+  section is nanoseconds; RwLock matters for large read-mostly structures such
+  as a routing table or a config snapshot. Name the semantics too: std has no
+  guard upgrade (read to write), and tokio::sync::RwLock is not fair, so a
+  write-heavy mix can starve writers.
+when_to_use:
+  - read-mostly shared state with non-trivial read work
+avoid_when:
+  - write-heavy workloads or tiny critical sections (use Mutex)
+minimal_example: |
+  use std::sync::RwLock;
+
+  let table = RwLock::new(std::collections::HashMap::<String, String>::new());
+  let len = table.read().unwrap().len();          // many readers
+  table.write().unwrap().insert("k".into(), "v".into()); // one writer
+  let _ = len;
+failure_modes:
+  - assuming RwLock removes contention when the lock line itself is hot
+  - expecting to upgrade a read guard to a write guard (deadlock in std)
+related:
+  - rust.mutex
+  - rust.arc
+  - design.shared-state
+sources:
+  - https://doc.rust-lang.org/std/sync/struct.RwLock.html

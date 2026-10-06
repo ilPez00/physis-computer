@@ -1,0 +1,38 @@
+id: k8s.reconciliation
+kind: kubernetes
+title: Reconciliation loop
+aliases: reconcile, control loop, convergence
+tags: architecture, controllers
+questions:
+  - how does a Kubernetes controller work?
+  - how would you write a controller?
+invariant: A loop that reads desired state, reads observed state, computes a diff and acts, then repeats -- never a one-shot command sequence.
+answer_30s: Reconcile reads desired and observed state, computes the diff and performs the minimum action to close it, then gets called again on the next event.
+answer_2m: |
+  Write it as: observe current state; compare with what the spec declares; act
+  on the difference; emit the new status; return. Two properties make it safe:
+  idempotence (running it twice with no external change does nothing) and
+  level-triggered thinking (react to the state you observe, not to the event
+  that woke you, so a missed event is not a lost update). Failures are recorded
+  in status and retried with exponential backoff rather than blocking the loop.
+  This same pattern is why the primitive graph is written as `watch -> diff ->
+  act -> report` in the recipes: it is the general shape of every system that
+  keeps two descriptions of the world in sync.
+when_to_use:
+  - any controller, operator, or system that must keep an external resource in sync
+commands:
+  - kubectl get <kind> -o yaml => spec is desired, status is observed; the gap is the work
+failure_modes:
+  - edge-triggered logic that assumes no event was ever missed
+  - non-idempotent action, so retries duplicate work
+follow_ups:
+  - how do you test a reconcile loop?
+related:
+  - k8s.desired-state
+  - k8s.controller
+  - design.idempotency
+  - design.retry-backoff
+  - recipe.controller
+sources:
+  - https://kubernetes.io/docs/concepts/architecture/controller/
+  - https://book.kubebuilder.io/architecture.html

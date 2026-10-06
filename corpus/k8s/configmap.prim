@@ -1,0 +1,33 @@
+id: k8s.configmap
+kind: kubernetes
+title: ConfigMap
+aliases: configmap, config
+tags: configuration
+questions:
+  - how do you get configuration into a container?
+invariant: Non-secret configuration is stored as a namespaced object and mounted or injected as env.
+answer_30s: ConfigMaps hold non-sensitive key/value configuration, consumed as environment variables, files in a volume, or CLI args.
+answer_2m: |
+  The subtle behaviour interviewers ask about: env-var consumers never see an
+  update without a Pod restart, while volume-mounted ConfigMaps are updated in
+  place (with a propagation delay, and only for files, not for subPath mounts).
+  That difference decides whether your change requires a rollout or a
+  reload/restart hook. Keep secrets in Secrets, not ConfigMaps -- a ConfigMap
+  is neither encrypted nor access-controlled beyond normal RBAC.
+when_to_use:
+  - non-secret settings shared by several workloads
+avoid_when:
+  - credentials or tokens (use Secret) or values that must change without a restart
+commands:
+  - kubectl get configmap -A => which configuration objects exist
+  - kubectl get configmap api-config -o yaml => what values the running config actually holds
+  - kubectl describe pod api-... => which ConfigMap keys the Pod mounted and whether any are missing
+failure_modes:
+  - required key missing, so the container fails to start
+  - expecting env-var changes to apply without a restart
+  - putting secrets in a ConfigMap
+related:
+  - k8s.secret
+  - k8s.volume
+sources:
+  - https://kubernetes.io/docs/concepts/configuration/configmap/

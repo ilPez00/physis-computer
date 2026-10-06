@@ -1,0 +1,46 @@
+id: recipe.webhook-receiver
+kind: recipe
+title: Webhook receiver
+aliases: webhook endpoint, incoming webhooks
+question: how would you design an endpoint that receives third-party webhooks?
+tags: architecture, api, reliability
+properties:
+  - fast acknowledgement (third parties time out in seconds)
+  - signature verification
+  - duplicate-safe (senders retry)
+  - replayable history for debugging
+invariant: Acknowledge within the sender's timeout, verify authenticity before acting, and process asynchronously with deduplication -- senders retry, so delivery is at-least-once.
+answer_30s: Verify the signature, persist the raw event with its provider id, return 2xx immediately, then process asynchronously with deduplication on that id.
+flow: |
+  Provider -> Ingress/API (verify signature, persist raw event)
+     |
+  immediate 2xx (within the provider's timeout)
+     |
+  queue -> worker (dedupe on provider event id, apply effect)
+     |
+  store: raw events + processed status (replayable)
+compose:
+  - design.idempotency => the same webhook will arrive more than once
+  - design.exactly-once => delivery is at-least-once; the effect must be single
+  - design.producer-consumer => acknowledgement and processing are decoupled
+  - design.bounded-queue => a slow downstream must not make the endpoint time out
+  - design.state-machine => received/verified/processed/failed are explicit states
+  - design.retry-backoff => our own downstream retries are bounded and jittered
+  - design.observability => signature failures and queue depth are the two signals that matter
+  - design.health-checking => readiness must not depend on the downstream that processes asynchronously
+  - k8s.service => stable endpoint for the provider
+  - rust.axum => handler verifies and enqueues, nothing slow in the request path
+  - rust.tokio-mpsc => bounded hand-off to the processing side
+failure_modes:
+  - processing synchronously, so the provider times out and retries (duplicating the effect)
+  - no signature verification, so anyone can inject events
+  - no deduplication, so provider retries double-apply
+  - 5xx returned for a downstream problem, so the provider retries for hours (return 2xx and record it)
+follow_ups:
+  - the provider sends a duplicate after a week -- what happens?
+related:
+  - design.idempotency
+  - design.exactly-once
+  - recipe.async-job-processing
+sources:
+  - https://stripe.com/docs/webhooks/best-practices

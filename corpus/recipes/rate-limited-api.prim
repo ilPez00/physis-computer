@@ -1,0 +1,46 @@
+id: recipe.rate-limited-api
+kind: recipe
+title: Rate-limited API
+aliases: rate limited api, throttled api, quota enforcement
+question: how would you add rate limiting to a public API?
+tags: architecture, api, reliability
+properties:
+  - per-tenant fairness
+  - burst tolerance with a sustained ceiling
+  - limits enforced close to the edge
+  - distinct from total overload protection
+invariant: Every request is admitted against a per-identity budget, and the rejection is explicit (429 with Retry-After), so clients can behave correctly.
+answer_30s: Enforce a token-bucket budget per API key or tenant at the edge, count it in a shared low-latency store, return 429 with Retry-After and limit headers, and keep a global concurrency limit behind it.
+flow: |
+  client -> Ingress/gateway (auth, identify tenant)
+     |
+  limiter: token bucket per tenant in Redis (atomic incr/lua)
+     |
+  admitted -> service (own concurrency limit + connection pool)
+     |
+  rejected -> 429 + Retry-After + X-RateLimit-* headers
+     |
+  observability: rejected rate per tenant, limiter latency
+compose:
+  - design.rate-limiting => algorithm, identity and response contract
+  - design.redis-cache => atomic counters in a shared store (INCR/Lua)
+  - design.load-shedding => total overload protection behind per-tenant fairness
+  - design.distributed-locking => the same atomic primitives, used for leases instead of budgets
+  - design.observability => reject rate per tenant is a product metric, not only an ops one
+  - design.timeouts => the limiter itself must be fast and fail open or closed deliberately
+  - rust.tower => the limiter is a layer, so it is applied uniformly
+  - k8s.ingress => the edge where per-route limits can also be applied
+  - rust.tokio-semaphore => per-replica concurrency as the last line of defence
+failure_modes:
+  - per-replica counters, so the effective limit is multiplied by the replica count
+  - no Retry-After, so well-behaved clients retry immediately and make it worse
+  - limiting by IP behind NAT, penalising unrelated tenants
+  - limiter in the critical path without a timeout, so the limiter becomes the outage
+follow_ups:
+  - how do you make the limiter itself highly available?
+related:
+  - design.rate-limiting
+  - design.load-shedding
+  - design.redis-cache
+sources:
+  - https://cloud.google.com/architecture/rate-limiting-strategies-techniques

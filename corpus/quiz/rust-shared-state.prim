@@ -1,0 +1,28 @@
+id: quiz.rust.shared-state
+kind: quiz
+track: rust
+title: Shared state in async Rust
+question: How do you share mutable state between Tokio tasks, and when would you avoid it?
+expects:
+  - arc
+  - mutex
+  - channels
+  - ownership
+  - contention
+misuse:
+  - arc mutex everywhere => hides the ownership boundary and serializes unrelated work
+  - tokio mutex by default => pays async overhead for guards that never await
+related:
+  - rust.arc
+  - rust.mutex
+  - rust.tokio-mpsc
+  - design.shared-state
+follow_ups:
+  - what happens if you hold a std MutexGuard across an await?
+  - how would you avoid contention on the hot path?
+answer: |
+  Prefer ownership transfer: move the state to one task and use channels. When
+  state is genuinely shared, Arc<Mutex<T>> (or Arc<RwLock<_>> for read-mostly)
+  with a small critical section; the guard releases on drop. Reach for
+  tokio::sync::Mutex only when the guard must span an await. Atomics for single
+  values. If AppState keeps growing locks, that is the signal to restructure.

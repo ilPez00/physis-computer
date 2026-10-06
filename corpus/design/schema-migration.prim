@@ -1,0 +1,44 @@
+id: design.schema-migration
+kind: design
+title: Schema migration compatibility
+aliases: migration, schema change, expand contract, database migration
+tags: database, deployment, reliability
+questions:
+  - how do you deploy a database change with zero downtime?
+invariant: Every schema change must be compatible with both the old and the new version of the application code while both are running.
+answer_30s: Use expand/contract: add the new column or table, deploy code that writes both and reads either, backfill, switch reads, then remove the old shape in a later deploy.
+answer_2m: |
+  The reason is the rolling update: at some point during a rollout, old and new
+  code run simultaneously against the same schema, so any change that breaks one
+  of them breaks the deployment. Expand/contract turns one risky change into
+  several safe ones, each independently deployable and rollback-safe. Practical
+  rules: additive changes first (new nullable column, new table, new index
+  concurrently), never rename or drop in the same release as the code change,
+  avoid long locks (add indexes CONCURRENTLY, batch backfills, avoid table
+  rewrites), and keep migrations idempotent and forward-only. Backfills are the
+  part that needs design: batched, throttled, resumable, and monitored, because
+  a naive UPDATE on a large table locks or saturates the database.
+when_to_use:
+  - any schema change on a system that deploys without downtime
+minimal_example: |
+  1. deploy: add column nullable            (old code unaffected)
+  2. deploy: write both, read old           (both versions safe)
+  3. backfill in batches (resumable)
+  4. deploy: read new, still write both
+  5. deploy: write new only
+  6. later:  drop old column/footprint
+failure_modes:
+  - renaming a column in one release, so the rollout breaks the old pods
+  - a migration that takes an exclusive lock on a hot table
+  - one big backfill transaction, blocking writes and generating a huge WAL burst
+  - rollback planned without considering that the migration already applied
+follow_ups:
+  - how does rollback work half way through this sequence?
+related:
+  - k8s.deployment.rolling-update
+  - k8s.job
+  - design.idempotency
+  - design.state-machine
+sources:
+  - https://martinfowler.com/articles/evodb.html
+  - https://wiki.postgresql.org/wiki/Lock_Monitoring

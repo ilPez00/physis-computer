@@ -1,0 +1,48 @@
+id: rust.arc
+kind: rust
+title: Arc<T>
+aliases: arc, atomic reference counting, shared ownership
+tags: concurrency, ownership
+questions:
+  - how do you share data between threads or tasks in Rust?
+invariant: Arc shares immutable ownership by atomic reference counting; it is alive until the last handle drops.
+answer_30s: Arc<T> shares immutable ownership across threads; mutation needs an interior-mutability wrapper (Mutex, RwLock, atomics) or, better, message passing to a single owner.
+answer_2m: |
+  All Arc does is keep one value alive until the last clone drops, paying an
+  atomic per clone. It does not allow mutation, and Arc<Mutex<T>> is a
+  composition where the mutex supplies mutation and the Arc supplies sharing.
+  The usual interview trap is treating Arc<Mutex> as a substitute for design: a
+  mutex in the middle of a request path serializes that path, so the fix is
+  often to restructure ownership (per-task state, a channel to the owner) rather
+  than to wrap more in a lock. Use Weak for back edges to avoid cycles.
+when_to_use:
+  - config or clients shared read-only by many tasks
+  - genuinely shared mutable state with a small critical section
+avoid_when:
+  - one task owns the state (move it) or writes can be queued (use a channel)
+minimal_example: |
+  use std::sync::Arc;
+  use tokio::sync::Mutex;
+
+  #[derive(Clone)]
+  struct AppState { db: Arc<DbPool>, cache: Arc<Mutex<HashMap<String, String>>> }
+
+  let state = AppState { db: Arc::clone(&db), cache: Arc::new(Mutex::new(HashMap::new())) };
+  tokio::spawn({ let s = state.clone(); async move { let _ = s; } });
+failure_modes:
+  - Arc<Mutex<T>> around everything, serializing unrelated work
+  - an Arc cycle, so nothing ever drops
+  - cloning an Arc per call just to avoid a borrow, paying atomics pointlessly
+misuse:
+  - arc mutex everywhere => hides the real ownership boundary and costs contention
+follow_ups:
+  - what is the difference between Arc and Rc?
+related:
+  - rust.mutex
+  - rust.rc-vs-arc
+  - rust.rwlock
+  - rust.send-sync
+  - rust.tokio-spawn
+  - design.shared-state
+sources:
+  - https://doc.rust-lang.org/std/sync/struct.Arc.html

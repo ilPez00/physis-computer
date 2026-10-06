@@ -1,0 +1,32 @@
+id: k8s.exec
+kind: kubernetes
+title: exec into a container
+aliases: kubectl exec, shell into pod
+tags: operations, diagnostics
+questions:
+  - how do you debug inside a running pod?
+invariant: exec starts a process in an existing container namespace, so it sees the container's network and filesystem but changes nothing about the image.
+answer_30s: `kubectl exec -it pod -- sh` runs a shell inside the container so you can test connectivity and read the live filesystem.
+answer_2m: |
+  Two things make it useful: the network namespace (so `curl`, `nslookup`, `nc`
+  test the same path the app uses) and the mounted config and secrets. Two
+  things make it awkward: distroless/minimal images have no shell at all, and
+  anything you install disappears with the container. For those cases use a
+  debug container (`kubectl debug`) sidecar, or an ephemeral pod with the same
+  labels -- which is also the answer when the problem is that the app cannot be
+  reached rather than that it cannot run.
+when_to_use:
+  - verifying network paths, mounted config, and filesystem state inside the real container
+commands:
+  - kubectl exec -it api-7d9f-abc -- sh => interactive shell inside the container
+  - kubectl exec api-7d9f-abc -- env => what the process actually sees (config, secrets)
+  - kubectl debug api-7d9f-abc -it --image=nicolaka/netshoot => debug a distroless container with tooling
+failure_modes:
+  - treating changes made in a shell as permanent configuration
+  - debugging a distroless image with no shell available
+related:
+  - k8s.logs
+  - k8s.port-forward
+  - k8s.debugging-workflow
+sources:
+  - https://kubernetes.io/docs/reference/kubectl/generated/kubectl_exec/

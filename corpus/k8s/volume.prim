@@ -1,0 +1,25 @@
+id: k8s.volume
+kind: kubernetes
+title: Volume
+aliases: volume, emptyDir, hostPath
+tags: storage
+questions:
+  - what happens to data written to a container filesystem?
+invariant: Container filesystems are ephemeral; anything that must outlive a container restart lives in a Volume.
+answer_30s: A Volume is a directory with a lifetime tied to the Pod (or longer for persistent volumes); without one, writes are lost when the container restarts.
+answer_2m: |
+  Distinguish lifetimes: `emptyDir` dies with the Pod (fine for scratch and for
+  sharing files between containers), `hostPath` binds a node path (couples you
+  to a node, mostly for agents and debugging), ConfigMap/Secret volumes are
+  read-only projections, and a PVC outlives the Pod. The last one is what makes
+  a StatefulSet meaningful.
+when_to_use:
+  - scratch space shared between containers, or durable state via a PVC
+avoid_when:
+  - durable data without a PVC
+related:
+  - k8s.pvc
+  - k8s.configmap
+  - k8s.secret
+sources:
+  - https://kubernetes.io/docs/concepts/storage/volumes/

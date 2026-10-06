@@ -1,0 +1,32 @@
+id: k8s.namespace
+kind: kubernetes
+title: Namespace
+aliases: namespace, ns
+tags: operations, isolation
+questions:
+  - what is a namespace actually for?
+invariant: A namespace scopes names, RBAC, quotas and most policy objects; it is not a network or kernel boundary.
+answer_30s: Namespaces partition names and policy (RBAC, quotas, limits) inside one cluster; they are not a security boundary on their own.
+answer_2m: |
+  What is namespaced: names, Service DNS, RBAC role bindings, ResourceQuota,
+  LimitRange, NetworkPolicy, Secrets and ConfigMaps. What is not: nodes,
+  PersistentVolumes, StorageClasses, CRDs, and the cluster's control plane. So
+  namespaces give teams independent vocabularies and budgets, while the real
+  isolation (network, kernel, node) comes from NetworkPolicy, securityContext
+  and separate clusters for the highest tiers. Remember `-n` versus `-A` in
+  every command you quote; a missing namespace is the most common reason "the
+  object does not exist".
+when_to_use:
+  - team or environment separation, per-team quotas, policy scoping
+commands:
+  - kubectl get ns => which namespaces exist
+  - kubectl get pods -A => every workload, across namespaces (the default look)
+  - kubectl get resourcequota -n payments => what budget a namespace is bound to
+failure_modes:
+  - assuming namespaces isolate network traffic (they do not without NetworkPolicy)
+  - looking for an object in the wrong namespace
+related:
+  - k8s.labels-selectors
+  - k8s.api-server
+sources:
+  - https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/

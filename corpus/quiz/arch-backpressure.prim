@@ -1,0 +1,28 @@
+id: quiz.arch.backpressure
+kind: quiz
+track: architecture
+title: Producer faster than consumer
+question: Your job queue grows without bound and memory climbs. What is happening and what do you do?
+expects:
+  - bounded queue
+  - backpressure
+  - shed
+  - queue depth
+  - scale on backlog
+misuse:
+  - more replicas only => moves the bottleneck to the database and multiplies load
+  - hpa on cpu => the consumer is IO-bound, so CPU stays low while the queue grows
+related:
+  - design.backpressure
+  - design.bounded-queue
+  - design.load-shedding
+  - k8s.hpa
+follow_ups:
+  - once the queue is bounded, what happens to the producer?
+  - what do you scale on instead of CPU?
+answer: |
+  Arrival rate exceeds service rate and the buffer is absorbing the difference
+  until memory runs out. Bound the queue with an explicit overflow policy: slow
+  the producer (backpressure), shed with 429/503, or both. Make queue depth the
+  saturation metric and autoscale on backlog/in-flight, not CPU. Then check the
+  real bottleneck (database connections, locks, downstream limits).

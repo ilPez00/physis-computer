@@ -1,0 +1,33 @@
+id: k8s.node
+kind: kubernetes
+title: Node
+aliases: node, worker node
+tags: architecture, capacity
+questions:
+  - what is on a node and how much can it run?
+invariant: A node is a machine (or VM) with a kubelet, a container runtime and allocatable capacity that the scheduler fills with Pods.
+answer_30s: A node runs the kubelet, the container runtime and the Pods assigned to it; its allocatable capacity minus the requests already placed is what the scheduler can fill.
+answer_2m: |
+  Capacity, allocatable and allocated are three different numbers: system
+  daemons reserve part of capacity, so allocatable is smaller, and the sum of
+  running Pod requests is allocated. Node conditions (Ready, MemoryPressure,
+  DiskPressure, PIDPressure) drive eviction of the lowest-priority Pods when a
+  resource is exhausted. This is where requests stop being bookkeeping and
+  become the scheduling currency, and where taints and tolerations express
+  "which workloads may live here".
+when_to_use:
+  - capacity planning, Pending-Pod diagnosis, node pressure and eviction reasoning
+commands:
+  - kubectl get nodes -o wide => readiness, roles, kubelet version, node IPs
+  - kubectl describe node <node> => capacity, allocated requests, taints, conditions
+  - kubectl top node => current usage against allocatable capacity
+failure_modes:
+  - a node in MemoryPressure evicting Pods that had no requests set
+  - cordoned node forgotten, so capacity is silently missing
+related:
+  - k8s.scheduler
+  - k8s.kubelet
+  - k8s.resources.requests
+  - k8s.daemon-set
+sources:
+  - https://kubernetes.io/docs/concepts/architecture/nodes/

@@ -1,0 +1,26 @@
+id: quiz.rust.cancellation
+kind: quiz
+track: rust
+title: Cancellation and shutdown
+question: How does cancellation work in async Rust, and how do you shut down a service cleanly?
+expects:
+  - drop cancels
+  - cancellation token
+  - select biased
+  - idempotent
+  - drain
+misuse:
+  - abort mid-write => leaves partially applied side effects
+  - select without biased => shutdown branch does not reliably win
+related:
+  - rust.cancellation
+  - rust.tokio-select
+  - rust.graceful-shutdown
+  - design.graceful-shutdown
+follow_ups:
+  - what happens to a partially applied write when a task is cancelled?
+answer: |
+  Futures are cancelled by being dropped, so every await is a cancellation
+  point and steps must be idempotent. Use a CancellationToken (or watch flag)
+  raced in select! { biased; }, stop accepting, drain in-flight work under a
+  timeout, then exit before the platform grace period ends.

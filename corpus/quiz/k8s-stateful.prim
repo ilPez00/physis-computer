@@ -1,0 +1,26 @@
+id: quiz.k8s.stateful
+kind: quiz
+track: kubernetes
+title: Deployment or StatefulSet
+question: When do you choose a StatefulSet over a Deployment, and what does it change?
+expects:
+  - stable identity
+  - pvc
+  - headless service
+  - ordered
+  - scaling
+misuse:
+  - statefulset by default => slower rollouts and orphaned claims for no benefit
+  - pvc per replica without a backup plan => durable data nobody can restore
+related:
+  - k8s.stateful-set
+  - k8s.headless-service
+  - k8s.pvc
+  - recipe.stateful-workload
+follow_ups:
+  - what happens when you scale a StatefulSet down and up again?
+answer: |
+  StatefulSet when replicas need stable names and their own volumes: databases,
+  quorum systems. It gives ordinal identity, per-replica PVCs, ordered start and
+  a headless Service for peer DNS. Scaling is a quorum operation, rollouts are
+  serial, and PVCs survive deletion (so cleaning up is explicit).

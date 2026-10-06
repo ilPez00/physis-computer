@@ -1,0 +1,26 @@
+id: quiz.k8s.probes
+kind: quiz
+track: kubernetes
+title: Readiness, liveness, startup
+question: Explain the three probes and give a case where each one is the right tool.
+expects:
+  - readiness
+  - liveness
+  - startup
+  - endpoint list
+  - restart
+misuse:
+  - liveness checking a dependency => a slow database restarts every replica
+  - readiness that never fails => broken pods keep receiving traffic
+related:
+  - k8s.probe.readiness
+  - k8s.probe.liveness
+  - k8s.probe.startup
+  - design.health-checking
+follow_ups:
+  - what does a failing readiness probe do to the Service?
+answer: |
+  Readiness gates traffic: failing removes the pod from the endpoint list without
+  a restart (use it when the app cannot serve right now). Liveness restarts the
+  container: use it only for a wedged process, never for a slow dependency.
+  Startup gives a slow boot a budget and suspends the other two until it passes.

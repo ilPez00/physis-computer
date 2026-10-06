@@ -1,0 +1,45 @@
+id: k8s.probe.readiness
+kind: kubernetes
+title: Readiness probe
+aliases: readiness, readinessProbe
+tags: operations, availability, health
+questions:
+  - how does Kubernetes know a pod can receive traffic?
+  - how do you avoid sending traffic to a starting pod?
+  - what are the three Kubernetes probes and when is each the right tool?
+invariant: A Pod receives Service traffic only while its readiness probe passes; failure removes it from the endpoint list without restarting it.
+answer_30s: A readiness probe gates traffic: failing removes the Pod from the Service endpoints, and it comes back automatically once the probe passes again.
+answer_2m: |
+  Readiness answers "can this replica serve right now?" -- not "is the process
+  alive". It must fail when a dependency the request path needs is down; that is
+  how a rollout to a broken version stops receiving traffic. Two operational
+  details: a Pod removed from endpoints still exists (unlike a failing liveness
+  probe, which restarts it), and removal in the data path is not instantaneous,
+  so clients still need retries or connection draining.
+when_to_use:
+  - every workload that receives Service traffic
+avoid_when:
+  - as a liveness substitute, or with a check that fails on transient dependency slowness
+commands:
+  - kubectl get pods -o wide => READY column is readiness, not liveness
+  - kubectl describe pod api-... => which probe failed, how often, and the last transition
+  - kubectl get endpoints api => empty list usually means readiness is failing
+minimal_example: |
+  readinessProbe:
+    httpGet: { path: /healthz/ready, port: 8080 }
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    failureThreshold: 3
+failure_modes:
+  - bad readiness probe that passes while the app cannot serve
+  - probe depends on a flaky dependency, flapping entire replicas out of rotation
+  - startup slower than the probe budget, so Pods are never Ready
+follow_ups:
+  - what is the difference between readiness and liveness?
+related:
+  - k8s.probe.liveness
+  - k8s.probe.startup
+  - k8s.deployment.rolling-update
+  - k8s.endpoints
+sources:
+  - https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/

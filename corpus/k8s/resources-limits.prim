@@ -1,0 +1,34 @@
+id: k8s.resources.limits
+kind: kubernetes
+title: Resource limits
+aliases: limits, cpu limit, memory limit
+tags: resources, reliability, performance
+questions:
+  - what happens when a container exceeds its memory limit?
+  - should you set a CPU limit in production?
+invariant: Limits are enforcement: exceeding a memory limit kills the container, exceeding a CPU limit throttles it.
+answer_30s: Memory limits are hard (OOMKill), CPU limits throttle rather than kill, and CPU limits are the usual cause of latency nobody can explain.
+answer_2m: |
+  Two different mechanisms with two different failure shapes. Memory: the
+  container is killed with OOMKilled and restarts, so a leak looks like a
+  restart loop. CPU: the container is throttled via cgroup quota in 100ms
+  periods, so a Go or async service with a burst-y profile shows latency
+  spikes and "the CPU is idle" dashboards -- throttling, not saturation, is the
+  signal (`container_cpu_cfs_throttled_seconds_total`). Setting requests and
+  letting CPU burst is a common production policy; memory limits should be well
+  above the steady-state working set.
+when_to_use:
+  - memory limits to bound blast radius; CPU limits only with a deliberate reason
+avoid_when:
+  - CPU limits on latency-sensitive services without measuring throttling
+commands:
+  - kubectl top pod => actual usage next to the declared limits
+  - kubectl describe pod api-... => Last State: Terminated, Reason: OOMKilled, Exit Code: 137
+failure_modes:
+  - memory limit below the real working set, causing OOMKill restart loops
+  - CPU limit causing throttling under burst, misread as a slow dependency
+related:
+  - k8s.resources.requests
+  - design.observability
+sources:
+  - https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/

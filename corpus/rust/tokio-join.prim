@@ -1,0 +1,22 @@
+id: rust.tokio-join
+kind: rust
+title: tokio::join! and try_join!
+aliases: join, join_all, concurrent await
+tags: async, concurrency
+questions:
+  - how do you run several async calls concurrently and wait for all of them?
+invariant: join! awaits futures concurrently inside one task and returns every result; it never cancels a branch.
+answer_30s: join! runs futures concurrently in the current task and waits for all of them: fan-out without spawning and without cancellation.
+when_to_use:
+  - parallel independent IO with all results required, same task, small bounded set
+avoid_when:
+  - unbounded collections (bound with buffered or a semaphore) or work that must outlive the caller
+failure_modes:
+  - join_all over a large collection, which is unbounded fan-out in disguise
+  - assuming join cancels siblings on error (that is try_join, and only then)
+related:
+  - rust.tokio-select
+  - rust.tokio-spawn
+  - rust.bounded-concurrency
+sources:
+  - https://docs.rs/tokio/latest/tokio/macro.join.html

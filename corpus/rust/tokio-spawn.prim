@@ -1,0 +1,49 @@
+id: rust.tokio-spawn
+kind: rust
+title: tokio::spawn
+aliases: spawn, background task
+tags: async, concurrency
+questions:
+  - how do you run work in the background in Tokio?
+invariant: A spawned task is an independent, 'static, Send future: it keeps running after the caller returns and its result is only reachable through the JoinHandle.
+answer_30s: spawn schedules a 'static Send future on the runtime; it outlives the caller, its errors must be handled explicitly, and its concurrency must be bounded by you.
+answer_2m: |
+  Three consequences drive the design. 'static: the task cannot borrow from the
+  request, so it owns or clones what it needs (usually Arc<AppState> plus the
+  payload) -- that is the cost of handing work off. Errors: a spawned task's
+  failure reaches nobody, so it must log, record a metric, or report through a
+  channel. Backpressure: spawning per item is unbounded concurrency and is how a
+  consumer OOMs, so bound it with a Semaphore, a bounded channel, or a fixed
+  worker pool. Fire-and-forget is a durability decision: if the work must
+  survive a restart, persist it in a queue before spawning.
+when_to_use:
+  - genuinely independent work with explicit error reporting and a bounded concurrency
+avoid_when:
+  - the caller needs the result, or the work must survive a process restart
+minimal_example: |
+  let state = std::sync::Arc::clone(&app_state);
+  let handle = tokio::spawn(async move {
+      state.metrics.inc("jobs.started");
+      process(state, job_id).await
+  });
+
+  // The only place the task's outcome is observable:
+  if let Err(join_err) = handle.await {
+      tracing::error!(%join_err, "worker task panicked");
+  }
+failure_modes:
+  - fire-and-forget error swallowed, so failures are invisible
+  - unbounded spawn per request, so a traffic spike becomes memory exhaustion
+  - spawning work that must outlive the process without persisting it first
+misuse:
+  - spawn per item with no bound => unbounded concurrency that looks like a scale win until it OOMs
+follow_ups:
+  - how do you bound the number of concurrently spawned tasks?
+related:
+  - rust.tokio-semaphore
+  - rust.bounded-concurrency
+  - rust.tokio-join
+  - design.worker-pool
+  - design.backpressure
+sources:
+  - https://docs.rs/tokio/latest/tokio/fn.spawn.html

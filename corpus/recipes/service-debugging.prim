@@ -1,0 +1,47 @@
+id: recipe.service-debugging
+kind: recipe
+title: Debugging a service end to end
+aliases: debug a service, troubleshooting service, why is it slow
+question: a service in production is slow or failing -- how do you debug it?
+tags: operations, diagnostics, incident
+properties:
+  - symptoms separated from causes
+  - layers ruled out in order
+  - every conclusion tied to evidence
+  - the fix followed by a prevention
+invariant: Work from the outside in and from the aggregate to the specific: symptoms first, then the layer that owns them, then the single request that demonstrates it.
+answer_30s: Confirm the symptom with metrics, find which layer moved (traffic, service latency, dependency latency, resource saturation), then reproduce one request and follow it through logs and a trace.
+flow: |
+  symptom (alert / report)
+     |
+  metrics: rate, errors, duration, saturation (per route, per dependency)
+     |
+  scope: one replica? one route? one dependency? all traffic?
+     |
+  evidence: logs with ids, one trace of a slow request, describe/events for the object
+     |
+  cause -> mitigation -> prevention (alert, test, guardrail)
+compose:
+  - design.observability => which signal answers which question
+  - design.timeouts => distinguishing a slow dependency from a slow service
+  - design.health-checking => readiness and liveness behaviour during the incident
+  - k8s.debugging-workflow => the Kubernetes layer of the same procedure
+  - k8s.logs => per-container and previous-instance logs
+  - k8s.describe => spec, status and events for one object
+  - k8s.top-resource-usage => usage against requests and limits
+  - k8s.endpoints => is traffic reaching anything at all
+  - rust.tracing => correlating a request across services
+  - design.backpressure => recognising saturation rather than a slow component
+failure_modes:
+  - starting from a hypothesis and looking for evidence that supports it
+  - restarting before reading the state that explains the failure
+  - treating a symptom (restart everything) as the fix, so it recurs
+  - no correlation id, so logs across services cannot be joined
+follow_ups:
+  - how would you tell a slow database from a slow network from a slow service?
+related:
+  - design.observability
+  - k8s.debugging-workflow
+  - recipe.incident-diagnosis
+sources:
+  - https://sre.google/sre-book/monitoring-distributed-systems/

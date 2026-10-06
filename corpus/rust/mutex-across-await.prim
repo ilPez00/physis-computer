@@ -1,0 +1,38 @@
+id: rust.mutex-across-await
+kind: rust
+title: Guard across await
+aliases: mutexguard across await, async mutex, hold lock across await
+tags: concurrency, async, pitfalls
+questions:
+  - what happens if you hold a std MutexGuard across an await?
+invariant: A std guard is not Send and blocks the OS thread, so holding it across an await either fails to compile in a spawned task or stalls that worker.
+answer_30s: It is a bug: the future stops being Send (cannot be spawned), and if it does compile the runtime worker thread is blocked while parked on the lock.
+answer_2m: |
+  Two symptoms, one mistake. Compile-time: the future is not Send, surfacing as
+  a long trait-bound error naming the guard -- the compiler protecting you. If
+  the future is never spawned it compiles and then blocks a worker thread, so
+  throughput collapses under contention instead of failing loudly. The fix is
+  not automatically tokio::sync::Mutex: first shrink the critical section
+  (extract or clone the value, release, then await), and only upgrade the mutex
+  when the guard genuinely must span the await.
+when_to_use:
+  - recognising the symptom and choosing between shrinking the section and upgrading the mutex
+minimal_example: |
+  // Wrong: guard lives across the await, so the future is not Send.
+  // let g = state.lock().unwrap(); do_io().await; drop(g);
+
+  // Right: shrink the critical section.
+  let snapshot = { let g = state.lock().unwrap(); g.clone() };
+  do_io().await;
+
+  // Right when the guard must span the await:
+  // let g = tokio_state.lock().await; do_io().await; drop(g);
+failure_modes:
+  - reaching for tokio::sync::Mutex before checking whether the lock must surround the await at all
+  - fixing the compile error in a way that hides real contention
+related:
+  - rust.mutex
+  - rust.tokio-spawn
+  - rust.send-sync
+sources:
+  - https://docs.rs/tokio/latest/tokio/sync/struct.Mutex.html

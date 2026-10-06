@@ -1,0 +1,48 @@
+id: design.load-shedding
+kind: design
+title: Load shedding
+aliases: load shedding, shedding, admission control, degrade
+tags: reliability, overload
+questions:
+  - what do you do when the service is overloaded?
+  - should a service reject requests when it cannot keep up?
+  - your job queue grows without bound — what do you do?
+invariant: Under overload, reject or downgrade work early and deliberately so the requests that are served still meet their latency budget.
+answer_30s: Shed low-value work early (429 or 503 with Retry-After) instead of accepting everything and letting queues grow, because serving most requests well beats serving all of them badly.
+answer_2m: |
+  The reasoning is about tail latency: once utilisation passes the knee of the
+  latency curve, adding load increases latency non-linearly, so accepting more
+  work makes every request slower until timeouts cascade. Shedding policy,
+  in order of preference: reject at the edge with a clear status and Retry-After,
+  deprioritise or defer non-critical work (background refreshes, analytics,
+  non-essential writes), serve degraded responses (cached, partial, stale), and
+  only then queue. Shedding requires knowing the budget: an explicit concurrency
+  limit or queue bound is what turns "we are overloaded" into a decision, and
+  priority classes (user-facing over background) decide what to drop. It is the
+  operational partner of backpressure: backpressure slows the producer,
+  shedding protects the server, and a mature system uses both plus autoscaling
+  for the slow-moving capacity change.
+when_to_use:
+  - any service with a latency objective and bursty or adversarial traffic
+avoid_when:
+  - dropping work that cannot be retried or reconstructed (queue or degrade instead)
+minimal_example: |
+  if inflight.get() >= limit:            # admission control
+      return 429 with Retry-After: 1
+  else:
+      permit = acquire()
+      try: handle()
+      finally: release(permit)
+failure_modes:
+  - no limit at all, so overload becomes OOM or a latency collapse for everyone
+  - shedding without telling the client (200 with an empty body), so callers cannot retry correctly
+  - shedding the wrong class of traffic (dropping user requests while background analytics keep running)
+related:
+  - design.backpressure
+  - design.bounded-queue
+  - design.rate-limiting
+  - design.timeouts
+  - rust.tokio-semaphore
+  - k8s.hpa
+sources:
+  - https://sre.google/sre-book/handling-overload/

@@ -1,0 +1,49 @@
+id: design.cache-aside
+kind: design
+title: Cache aside (read-through)
+aliases: cache aside, read through, lazy caching, cache backed api
+tags: caching, performance
+questions:
+  - how would you cache a database read?
+invariant: The application reads the cache, falls back to the source of truth on a miss, and populates the cache with a TTL.
+answer_30s: On read, check the cache, and on a miss load from the database and store the result with a TTL; invalidate on write rather than trying to update the cache.
+answer_2m: |
+  Cache-aside is the default because it is easy to reason about and degrades
+  safely (a cold or unavailable cache just means more database load). The two
+  rules that prevent most bugs: always set a TTL, so a missed invalidation is
+  self-healing rather than permanent, and invalidate on write instead of
+  updating, because an update is a second write that can succeed while the
+  database write fails (or vice versa). Write-through (write to cache and
+  database together) and write-behind (asynchronous flush) are the variants
+  worth mentioning with their trade-offs: write-through costs latency on writes
+  but keeps the cache hot, write-behind risks losing recent writes. Cache
+  stampede is the classic failure: many callers miss the same key and all hit
+  the database, fixed by single-flight/short-term locks or by refreshing hot
+  keys proactively.
+when_to_use:
+  - read-heavy endpoints with a clear source of truth and tolerable staleness
+avoid_when:
+  - strong consistency requirements, or data that is written far more than read
+minimal_example: |
+  value = cache.get(key)
+  if value is None:
+      value = db.load(key)          # source of truth
+      cache.set(key, value, ttl=60) # bound staleness
+  return value
+
+  # on write:
+  db.write(key, new_value)
+  cache.delete(key)                 # invalidate, do not update
+failure_modes:
+  - no TTL, so a stale entry lives until someone notices
+  - updating the cache on write instead of invalidating, so the two stores drift
+  - stampede on a hot key after eviction or deploy (cold cache)
+follow_ups:
+  - how do you keep the cache and database consistent?
+related:
+  - design.cache-invalidation
+  - design.redis-cache
+  - design.backpressure
+  - recipe.cache-backed-api
+sources:
+  - https://redis.io/docs/manual/patterns/

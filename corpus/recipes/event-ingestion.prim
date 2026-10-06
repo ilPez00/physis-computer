@@ -1,0 +1,50 @@
+id: recipe.event-ingestion
+kind: recipe
+title: Event ingestion
+aliases: event ingestion, ingest events, telemetry ingest, 100k events per minute
+question: how would you design a service receiving 100k events per minute?
+tags: architecture, scale, streams
+properties:
+  - sustained throughput with bounded memory
+  - ordered per key, unordered globally
+  - durable before acknowledged
+  - idempotent downstream effects
+invariant: Persist before acknowledging, partition by key for ordering, and bound every hop so that backpressure reaches the producer.
+answer_30s: A thin ingest tier that validates and appends to a partitioned durable log (batched writes), consumers that process per partition with bounded concurrency, and idempotent sink writes keyed by event id.
+flow: |
+  producers -> Ingress/API (validate, authenticate)
+     |
+  batch append -> durable log / queue (partitioned by key)
+     |
+  consumers per partition (bounded concurrency, ordered per key)
+     |
+  sinks: database / warehouse / cache (idempotent by event id)
+     |
+  backlog per partition = the scaling signal
+compose:
+  - design.producer-consumer => ingest and processing rates decouple
+  - design.exactly-once => at-least-once delivery plus dedup by event id
+  - design.idempotency => replays and consumer retries are safe
+  - design.bounded-queue => per-partition backlog bounded and observable
+  - design.backpressure => slow sinks slow ingestion instead of growing memory
+  - design.worker-pool => consumer concurrency is a chosen number per partition
+  - design.observability => ingest rate, per-partition lag, sink latency, dedup rate
+  - design.timeouts => sink writes bounded so a slow sink does not stall a partition
+  - k8s.deployment => consumers scale with lag
+  - k8s.hpa => scale on lag, not CPU
+  - rust.tokio-mpsc => bounded in-process buffering
+  - rust.bounded-concurrency => batched sink writes with a concurrency cap
+failure_modes:
+  - acknowledging before persistence, so a crash loses accepted events
+  - a single partition or single consumer, so throughput is capped at one core
+  - unbounded in-memory buffering between tiers, so a sink outage becomes an OOM
+  - no dedup on replay, so a reprocessed window duplicates rows
+follow_ups:
+  - a sink is down for two hours: what happens to the backlog and to memory?
+related:
+  - design.producer-consumer
+  - design.exactly-once
+  - recipe.high-throughput-telemetry
+  - design.telemetry-pipeline
+sources:
+  - https://kafka.apache.org/documentation/#design

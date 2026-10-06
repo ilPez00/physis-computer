@@ -1,0 +1,35 @@
+id: rust.borrow-lifetimes
+kind: rust
+title: Borrowing and lifetimes
+aliases: lifetimes, borrow checker, lifetime elision
+tags: ownership, fundamentals
+questions:
+  - when do you need to write a lifetime annotation?
+invariant: A lifetime names how long a borrow must stay valid; it constrains relationships, it never extends a value's life.
+answer_30s: Lifetimes describe the relationship between borrows and the data they point at, and annotations are needed only when that relationship is ambiguous.
+answer_2m: |
+  Elision covers the common single-input cases, so annotations appear where the
+  relationship is not obvious: several input references with one output, or a
+  struct holding a reference. 'static means the whole program (literals, statics,
+  boxed ownership), and in server code the practical rule is that long-lived
+  structures and handlers should own their data (String, Vec, Arc), because a
+  borrow cannot outlive the task that holds it. Reaching for 'static everywhere
+  is a smell that holds clones; the honest fix is deciding who owns the data.
+when_to_use:
+  - structs holding references, functions with several reference arguments
+avoid_when:
+  - shared state across tasks or long-lived handlers (own the data instead)
+minimal_example: |
+  // Elision handles this: one input borrow determines the output borrow.
+  fn first_word(s: &str) -> &str { s.split_whitespace().next().unwrap_or("") }
+
+  // Needed: two inputs, so the relationship must be stated.
+  fn longer<'a>(a: &'a str, b: &'a str) -> &'a str { if a.len() >= b.len() { a } else { b } }
+failure_modes:
+  - sprinkling 'static on a struct to make it compile, then cloning to fill it
+  - returning a reference to a value created in the function
+related:
+  - rust.ownership-move
+  - rust.arc
+sources:
+  - https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html

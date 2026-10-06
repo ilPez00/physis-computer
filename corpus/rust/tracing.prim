@@ -1,0 +1,38 @@
+id: rust.tracing
+kind: rust
+title: tracing
+aliases: tracing, structured logs, spans
+tags: observability, async
+questions:
+  - how do you instrument an async service?
+invariant: Spans carry context across awaits and tasks; events carry facts with structured fields.
+answer_30s: Use a span per request and per outbound call, emit events with structured fields instead of formatted strings, and correlate with a propagated request id.
+answer_2m: |
+  The async-specific value is that span context travels with the task, so a log
+  emitted deep inside a spawned task still knows which request it belongs to --
+  string formatting cannot do that. Discipline that makes it useful: one span
+  per inbound request and outbound dependency (method, route, status, latency),
+  structured fields rather than interpolation, ids from headers, and ERROR
+  reserved for things a human must act on. Log volume is a cost: high-cardinality
+  values turn logging into an expensive database, so put measurements in metrics
+  and facts in logs.
+when_to_use:
+  - every service; the seam between code and operations
+minimal_example: |
+  use tracing::{info, instrument};
+
+  #[instrument(skip(state), fields(order_id = %id))]
+  async fn create_order(state: AppState, id: String) -> Result<Order, AppError> {
+      info!(items = 3, "creating order");
+      Ok(load_order(&state, &id).await?)
+  }
+failure_modes:
+  - formatted strings as messages, making logs unqueryable
+  - logging secrets or whole payloads
+  - debug-level instrumentation everywhere, burying the signal
+related:
+  - design.observability
+  - rust.axum
+  - k8s.logs
+sources:
+  - https://docs.rs/tracing/latest/tracing/

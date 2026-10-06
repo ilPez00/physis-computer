@@ -1,0 +1,33 @@
+id: k8s.ingress
+kind: kubernetes
+title: Ingress
+aliases: ingress, http routing
+tags: networking, http
+questions:
+  - how do you route HTTP traffic by host and path into a cluster?
+invariant: Ingress is L7 routing rules evaluated by an ingress controller that terminates the connection.
+answer_30s: Ingress declares host/path routing to Services; an ingress controller (nginx, Traefik, Envoy Gateway) watches those objects and actually routes the traffic.
+answer_2m: |
+  Two halves, and the interview question is usually about the second: the
+  Ingress object is a declaration with no effect on its own. Without a
+  controller, nothing routes. The controller is also where TLS termination,
+  header rewriting, timeouts and rate limits live. If the requirement goes
+  beyond routing (traffic splitting, mTLS, retries per route), the current
+  answer is the Gateway API rather than more Ingress annotations.
+when_to_use:
+  - HTTP(S) entry point, host/path routing, TLS termination
+avoid_when:
+  - non-HTTP protocols (use Service types) or fine-grained mesh policy (use Gateway API/mesh)
+commands:
+  - kubectl get ingress -A => which hosts/paths are published
+  - kubectl describe ingress api => which backend service and port a rule points at
+  - kubectl logs -n ingress-nginx deploy/ingress-nginx-controller => why a request returned 502/404
+failure_modes:
+  - no ingress controller installed, so the object is inert
+  - backend Service or targetPort wrong -> 502/503
+  - probe/health path not excluded from auth, so health checks fail
+related:
+  - k8s.service
+  - k8s.service.loadbalancer
+sources:
+  - https://kubernetes.io/docs/concepts/services-networking/ingress/

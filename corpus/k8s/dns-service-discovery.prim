@@ -1,0 +1,31 @@
+id: k8s.dns-service-discovery
+kind: kubernetes
+title: Cluster DNS and service discovery
+aliases: kube-dns, coredns, service discovery
+tags: networking, discovery, dns
+questions:
+  - how does one service find another in Kubernetes?
+invariant: Every Service gets a DNS name `<service>.<namespace>.svc.cluster.local` resolving to its ClusterIP.
+answer_30s: Cluster DNS resolves service names, so pods call `http://api.payments.svc.cluster.local` and never hardcode IPs.
+answer_2m: |
+  A Service name resolves to its ClusterIP (headless services resolve to Pod
+  IPs instead). Search domains are injected into the Pod's resolv.conf, so
+  `api` and `api.payments` usually work from the same namespace. The failure
+  modes are the useful part: DNS resolution succeeding while the Service has no
+  ready endpoints produces connection errors that look like DNS problems, and
+  short names silently resolve across namespaces when a Service with the same
+  name exists in the search path order.
+when_to_use:
+  - service-to-service addressing, config that must survive Pod replacement
+commands:
+  - kubectl get svc -n kube-system => is the DNS service itself healthy
+  - kubectl exec -it deploy/api -- nslookup api.payments => what a pod actually resolves
+failure_modes:
+  - short-name collisions across namespaces
+  - DNS fine but no ready endpoints (connection refused, looks like DNS)
+  - CoreDNS under-resourced on a busy cluster, causing intermittent timeouts
+related:
+  - k8s.service
+  - k8s.headless-service
+sources:
+  - https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/

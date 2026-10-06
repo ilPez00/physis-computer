@@ -1,0 +1,26 @@
+id: quiz.rust.channels
+kind: quiz
+track: rust
+title: Choosing a channel type
+question: Which channel do you use for a job queue, for fan-out, for the latest config value, and for a reply?
+expects:
+  - mpsc
+  - broadcast
+  - watch
+  - oneshot
+  - ownership
+misuse:
+  - unbounded mpsc for work => a slow consumer becomes an OOM
+  - broadcast as a work queue => jobs are lost when a subscriber lags
+related:
+  - rust.tokio-mpsc
+  - rust.tokio-broadcast
+  - rust.tokio-watch
+  - rust.tokio-oneshot
+follow_ups:
+  - what does a receiver see when all senders drop?
+answer: |
+  Bounded mpsc for a work queue (send().await is the backpressure); broadcast
+  for fan-out where Lagged is handled by resyncing; watch for the latest value
+  only; oneshot for a single reply. Sender drop closes the channel, which is the
+  drain-and-exit signal.

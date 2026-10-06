@@ -1,0 +1,26 @@
+id: k8s.desired-state
+kind: kubernetes
+title: Desired state
+aliases: declarative configuration, desired vs observed
+tags: architecture, declarative
+questions:
+  - what does declarative mean in Kubernetes?
+invariant: You submit the desired state; controllers compare it with observed state and act on the difference.
+answer_30s: You declare what should exist, not what to do; the object is the API, and controllers continuously close the gap between declared and observed state.
+answer_2m: |
+  Consequences that interviewers like: the same submission is idempotent (apply
+  twice, one result), a deleted Pod is recreated because the declaration still
+  stands, and convergence is eventually consistent rather than atomic -- which
+  is why you observe status instead of assuming success. It also means the
+  interesting engineering is in the diff loop, not in the command sequence, and
+  that "how do I force it" becomes "what does the declaration say".
+when_to_use:
+  - everything you can express as state; the core of the operational model
+avoid_when:
+  - imperative one-off actions (use a Job, exec, or an operator that still writes desired state)
+related:
+  - k8s.reconciliation
+  - k8s.controller
+  - design.idempotency
+sources:
+  - https://kubernetes.io/docs/concepts/architecture/controller/

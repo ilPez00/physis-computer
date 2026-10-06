@@ -1,0 +1,38 @@
+id: design.retry-backoff
+kind: design
+title: Retry with exponential backoff
+aliases: retry, backoff, jitter, exponential backoff
+tags: reliability, resilience
+questions:
+  - when should a service retry a failed call?
+  - what happens when the upstream starts returning 429?
+invariant: Retry transient failures only, with exponential delay plus jitter, a bounded attempt count and a deadline shared with the caller.
+answer_30s: Retry transient, idempotent operations with exponential backoff and jitter, always under an attempt cap and a total deadline, and never for errors that will not change.
+answer_2m: |
+  The reasoning for each ingredient: idempotency because a timeout may mean
+  success; backoff because retrying immediately amplifies the load that caused
+  the failure; jitter because synchronous clients form a thundering herd on the
+  same schedule; a cap and deadline because an unbounded retry converts a slow
+  dependency into leaked connections and stuck requests; classification because
+  retrying a 400 wastes the budget and retrying a 429 requires a longer delay
+  than a 500. Watch for layered retries: client retry times gateway retry times
+  queue redelivery multiplies attempts and can keep a struggling dependency down.
+  When the failure is sustained rather than transient, retries are the wrong
+  tool and a circuit breaker or load shedding is the right one.
+when_to_use:
+  - transient network failures, brief dependency restarts, optimistic-concurrency conflicts
+avoid_when:
+  - non-idempotent writes, validation or auth errors, sustained dependency failure
+failure_modes:
+  - no jitter, so all clients retry simultaneously
+  - retries without idempotency, creating duplicated side effects
+  - retries at multiple layers with no global attempt budget
+  - a retry storm that keeps the dependency overloaded (the case for a circuit breaker)
+related:
+  - design.idempotency
+  - design.circuit-breaker
+  - design.timeouts
+  - rust.retry
+  - k8s.reconciliation
+sources:
+  - https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/

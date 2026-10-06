@@ -1,0 +1,48 @@
+id: rust.tokio-mpsc
+kind: rust
+title: tokio::sync::mpsc
+aliases: mpsc, channel, queue, producer consumer
+tags: async, channels, concurrency
+questions:
+  - how do tasks talk to each other in Tokio?
+invariant: A bounded mpsc channel moves owned messages from many senders to one receiver, and a full channel makes send().await wait.
+answer_30s: mpsc is the work-queue shape: many producers transfer ownership of each message to one consumer, and a bounded capacity turns a slow consumer into backpressure instead of growth.
+answer_2m: |
+  Boundedness is the design decision, not a detail: with capacity, send().await
+  parks the producer when the consumer falls behind, so the pressure reaches the
+  source; with an unbounded channel the failure is a memory graph that grows
+  until the OOM killer resolves it. mpsc is also the ownership-transfer idiom:
+  the message moves, so producer and consumer never share mutable state and no
+  lock is needed. Closing is part of the protocol: when every sender drops, the
+  receiver sees None -- the standard drain-and-exit signal for a worker.
+when_to_use:
+  - job queues, fan-in to a single owner, decoupling producers from consumers
+avoid_when:
+  - many consumers of the same message (broadcast) or only the latest value matters (watch)
+minimal_example: |
+  use tokio::sync::mpsc;
+
+  let (tx, mut rx) = mpsc::channel::<Job>(256); // capacity = backpressure
+
+  tokio::spawn(async move {
+      while let Some(job) = rx.recv().await { // None when all senders drop
+          if let Err(e) = handle(job).await { tracing::error!(%e, "job failed"); }
+      }
+      tracing::info!("queue drained, exiting");
+  });
+
+  tx.send(Job::new(payload)).await?; // waits when the queue is full
+failure_modes:
+  - an unbounded channel, so a slow consumer becomes an OOM
+  - a sender cloned into a task that never drops, so shutdown is never observed
+  - ignoring a send error after the receiver exited, losing the message
+follow_ups:
+  - how do you fan out one message to many consumers?
+related:
+  - rust.tokio-broadcast
+  - rust.tokio-oneshot
+  - design.bounded-queue
+  - design.backpressure
+  - design.producer-consumer
+sources:
+  - https://docs.rs/tokio/latest/tokio/sync/mpsc/index.html

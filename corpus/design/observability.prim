@@ -1,0 +1,39 @@
+id: design.observability
+kind: design
+title: Observability
+aliases: observability, metrics logs traces, monitoring, telemetry
+tags: operations, diagnostics
+questions:
+  - what would you instrument in a new service?
+invariant: Metrics answer "how much"; logs answer "what happened once"; traces answer "where the time went". Each has its own cost model.
+answer_30s: Instrument four signals -- request rate, errors, duration, saturation (RED plus saturation) -- plus one correlation id across logs and traces, and alert on symptoms users feel rather than on causes.
+answer_2m: |
+  The discipline is choosing the right instrument: metrics are aggregated and
+  cheap but lose detail (counters and histograms, low cardinality -- never a
+  user id as a label), logs are detailed and expensive (structured, sampled,
+  never secrets), traces show causal chains across services (sampled, and
+  useful above all for tail latency). Coverage that matters for a service: RED
+  per route, saturation per resource (queue depth, pool waits, in-flight
+  concurrency), dependency health (latency and error rate per upstream), and
+  business counters. Alert on symptoms (error budget burn, p99 latency, queue
+  depth) rather than on every cause, and make sure every alert has a runbook
+  entry -- an alert nobody can act on trains people to ignore alerts.
+  Distributed tracing requires context propagation: without a propagated id the
+  three pillars cannot be joined, and correlation is where most of the value
+  actually lives.
+when_to_use:
+  - every service, worker and controller; decide at design time, not during the first incident
+failure_modes:
+  - high-cardinality labels, so the metrics backend becomes the outage
+  - logs without structured fields or ids, so incidents are reconstructed by grep
+  - alerting on causes with no action, so the signal is drowned
+  - tracing without propagated context, so traces end at the first service boundary
+related:
+  - design.health-checking
+  - design.timeouts
+  - rust.tracing
+  - k8s.logs
+  - k8s.top-resource-usage
+  - recipe.incident-diagnosis
+sources:
+  - https://sre.google/sre-book/monitoring-distributed-systems/

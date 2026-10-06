@@ -1,0 +1,27 @@
+id: quiz.k8s.zero-downtime
+kind: quiz
+track: kubernetes
+title: Deploying without downtime
+question: How would you deploy a new version of a service without dropping requests?
+expects:
+  - rolling update
+  - readiness probe
+  - maxsurge
+  - graceful shutdown
+  - migration
+misuse:
+  - readiness equals liveness => readiness that restarts pods instead of gating traffic
+  - no drain => in-flight requests fail on every deploy
+related:
+  - k8s.deployment.rolling-update
+  - k8s.probe.readiness
+  - design.graceful-shutdown
+  - design.schema-migration
+follow_ups:
+  - the new version fails after 30% of traffic moved -- what now?
+  - how does the database schema fit into this?
+answer: |
+  Rolling update with maxSurge/maxUnavailable; new pods must become Ready before
+  old ones are removed; graceful shutdown with preStop/terminationGracePeriod and
+  client retries; expand/contract migrations so both versions run against one
+  schema; rollout undo rehearsed.

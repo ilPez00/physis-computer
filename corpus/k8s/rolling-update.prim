@@ -1,0 +1,46 @@
+id: k8s.deployment.rolling-update
+kind: kubernetes
+title: Rolling update
+aliases: rolling deployment, rollout, zero downtime deploy
+tags: deployment, availability
+questions:
+  - how would you deploy a service without downtime?
+  - how do Kubernetes rolling updates work?
+invariant: Maintain enough healthy replicas while replacing the old ReplicaSet.
+answer_30s: Run two ReplicaSets at once: the new one grows as the old one shrinks, bounded by maxSurge and maxUnavailable, and only Pods that pass readiness join the Service.
+answer_2m: |
+  maxSurge bounds how many extra Pods exist above the desired count;
+  maxUnavailable bounds how far below it you may go. The controller waits for
+  new Pods to become Ready before scaling the old ReplicaSet down further, so
+  capacity changes by at most one step at a time. Zero downtime additionally
+  requires: a readiness probe that reflects real serving ability, graceful
+  shutdown (SIGTERM + preStop + terminationGracePeriodSeconds), in-flight
+  request draining, and a database migration strategy compatible with both
+  versions running at the same time.
+when_to_use:
+  - stateless services
+  - gradual application rollout
+avoid_when:
+  - the application cannot tolerate mixed versions in the same schema
+commands:
+  - kubectl rollout status deployment/api => is the new ReplicaSet healthy yet?
+  - kubectl rollout history deployment/api => which revisions exist and what changed
+  - kubectl rollout undo deployment/api => revert to the previous template
+  - kubectl get rs -o wide => how far the shift old ReplicaSet -> new ReplicaSet has progressed
+  - kubectl describe deployment/api => which maxSurge/maxUnavailable bounds are in force
+failure_modes:
+  - bad readiness probe
+  - incompatible database migration
+  - insufficient cluster capacity for surge
+  - no graceful shutdown, so in-flight requests fail
+misuse:
+  - kubectl rollout restart deployment/api => restarting is not a rollout; it recycles Pods without changing the template
+follow_ups:
+  - how do you roll back when the new version broke the schema?
+related:
+  - k8s.deployment
+  - k8s.replica-set
+  - k8s.probe.readiness
+  - design.graceful-shutdown
+sources:
+  - https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#rolling-update-deployment

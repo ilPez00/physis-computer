@@ -1,0 +1,33 @@
+id: rust.traits
+kind: rust
+title: Traits
+aliases: traits, trait bounds, impl Trait
+tags: fundamentals, api design
+questions:
+  - how do traits differ from interfaces?
+invariant: Traits define behaviour in terms of the implementer; generic bounds monomorphise, dyn Trait dispatches through a vtable.
+answer_30s: Traits describe behaviour; taking them as bounds gives static dispatch with no allocation, while dyn Trait gives runtime polymorphism at the cost of indirection.
+answer_2m: |
+  The design decision is dispatch. Generics plus bounds (or `impl Trait`)
+  monomorphise: fastest, but the concrete type must be known at compile time and
+  code size grows. `Box<dyn Trait>` allows heterogeneous collections and
+  runtime-selected implementations with one code path. Server code typically
+  wants generics at internal seams and dyn at boundaries where the backend is
+  chosen at startup (repositories, embedders, transports). Remember the orphan
+  rule: you can implement a trait only if you own the trait or the type, which is
+  why newtype wrappers exist.
+when_to_use:
+  - abstraction seams, pluggable backends, test doubles
+minimal_example: |
+  trait Store { fn get(&self, k: &str) -> Option<String>; }
+
+  fn read_static<S: Store>(s: &S, k: &str) -> Option<String> { s.get(k) }
+  fn read_dynamic(s: &dyn Store, k: &str) -> Option<String> { s.get(k) }
+failure_modes:
+  - boxed dyn in a hot path, paying indirection without needing polymorphism
+  - over-generic functions, so every call site compiles a new body
+related:
+  - rust.generics-monomorphization
+  - rust.dyn-vs-generic
+sources:
+  - https://doc.rust-lang.org/book/ch10-02-traits.html

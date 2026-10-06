@@ -1,0 +1,32 @@
+id: rust.result
+kind: rust
+title: Result<T, E>
+aliases: result, error handling, fallible
+tags: errors, fundamentals
+questions:
+  - how do you handle errors in Rust?
+invariant: A Result makes failure a value in the type, so the compiler forces every caller to decide what to do with it.
+answer_30s: Result<T, E> encodes failure in the type instead of a global or an exception, so callers must handle it or explicitly propagate it with `?`.
+answer_2m: |
+  There is no hidden control flow: `match` consumes the value, `?` propagates
+  it. Because errors are values they can be logged, retried, matched or wrapped,
+  and the error type becomes part of the API: a library should expose a precise
+  enum (callers can match), an application binary can flatten to anyhow at the
+  boundary. Avoid unwrap in server code exactly where an outage would turn a bug
+  into a crash loop restart.
+when_to_use:
+  - any operation that can fail: IO, parsing, network, validation
+avoid_when:
+  - genuinely impossible states (assert with a reason instead)
+failure_modes:
+  - unwrap on user input, turning a bad request into a panic and a 500
+  - discarding the error with `let _ =`, losing the reason
+misuse:
+  - boxed dyn error everywhere => callers lose the ability to match and react
+related:
+  - rust.question-mark
+  - rust.error-enum
+  - rust.anyhow-thiserror
+sources:
+  - https://doc.rust-lang.org/std/result/enum.Result.html
+  - https://doc.rust-lang.org/book/ch09-00-error-handling.html

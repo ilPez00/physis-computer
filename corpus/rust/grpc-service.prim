@@ -1,0 +1,50 @@
+id: rust.grpc-service
+kind: rust
+title: gRPC service
+aliases: grpc, grpc-server
+tags: networking, serde
+questions:
+  - when do you pick gRPC over HTTP/JSON?
+  - how do you version a gRPC API?
+invariant: gRPC is just a wire format over HTTP/2; the server is a normal async Tower service that serializes Protobuf, so every Rust concurrency primitive applies unchanged.
+when_to_use:
+  - typed, polyglot contracts between services
+  - streaming or bidirectional RPC
+  - latency-sensitive internal traffic where schema-driven serialization pays off
+avoid_when:
+  - browser clients (no HTTP/2 gRPC in browsers; use gRPC-Web or REST)
+  - public internet without a gateway
+commands:
+  - no stdlib command: cargo add tonic, tonic-build --features transport
+minimal_example: |
+  let svc = GreeterServer::new(GreeterImpl);
+  let addr: SocketAddr = "0.0.0.0:50051".parse()?;
+  println!("listening on {addr}");
+  tonic::transport::Server::builder()
+      .add_service(svc)
+      .serve(addr)
+      .await?;
+failure_modes:
+  - mixing sync and async across the service boundary (tonic requires Send + 'static handlers)
+  - Protobuf schema added fields without a `reserved` tag, breaking unknown-field handling
+  - streaming an unbounded message with no max decode size → OOM
+follow_ups:
+  - how would you version a v1 to v2 gRPC API without breaking clients?
+related:
+  - rust.axum
+  - rust.tower
+  - rust.serde
+  - rust.tracing
+answer_30s: |
+  A gRPC server is an HTTP/2 + Protobuf codec fronted by a `tonic::transport::Server`
+  wrapping a normal async Tower service: define a `[#derive(Service)]` impl,
+  add it with `.add_service`, and `.serve(addr).await`.
+answer_2m: |
+  Code the server with `tonic`/`prost`: derive the service from your
+  `build.rs`-generated trait, wrap it in `Server::builder().add_service(...).serve`,
+  and treat streaming RPCs as async `Stream`s — apply bounded concurrency,
+  per-call timeout, and graceful shutdown exactly as for an Axum handler,
+  because gRPC is HTTP/2 underneath.
+sources:
+  - https://docs.rs/tonic
+  - https://protobuf.dev

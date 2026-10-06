@@ -1,0 +1,52 @@
+id: recipe.async-job-processing
+kind: recipe
+title: Async job processing
+aliases: async job processing, background jobs, job queue
+question: how would you design a service receiving 100k events per minute and processing them asynchronously?
+tags: architecture, queue, batch
+properties:
+  - admitted load is decoupled from processing rate
+  - bounded queue depth (no unbounded memory growth)
+  - horizontal scaling of workers
+  - idempotent processing under redelivery
+  - graceful shutdown with no lost work
+invariant: Accept fast, persist durably, process with bounded concurrency, and make every job idempotent so redelivery is free.
+answer_30s: A thin ingest API that validates and enqueues into a durable bounded queue, plus worker replicas that pull jobs with bounded concurrency, retry idempotently, and shut down by draining.
+flow: |
+  Ingress / API (validate + enqueue, fast)
+     |
+  durable queue (bounded depth, backpressure at the edge)
+     |
+  worker deployment (N consumers, bounded concurrency)
+     |
+  database (idempotent writes keyed by job id)
+     |
+  metrics: queue depth, in-flight, per-item latency
+compose:
+  - design.producer-consumer => ingest and processing scale and fail independently
+  - design.bounded-queue => depth is the saturation signal, and overflow has a policy
+  - design.backpressure => when workers fall behind, the producer slows or the edge sheds
+  - design.worker-pool => concurrency is a chosen number, not a function of traffic
+  - design.idempotency => redelivery and retries cannot duplicate effects
+  - design.retry-backoff => transient failures retry with jitter and a cap
+  - design.state-machine => each job has an explicit state, so stuck jobs are visible
+  - design.graceful-shutdown => deploys do not lose in-flight jobs
+  - k8s.deployment => worker replicas roll and scale independently of the API
+  - k8s.hpa => scale on queue depth or in-flight work, not CPU alone
+  - k8s.resources.requests => scheduler places workers predictably
+  - rust.tokio-mpsc => bounded channel is the in-process half of the same contract
+  - rust.tokio-semaphore => in-flight bound that protects the shared database
+  - rust.graceful-shutdown => stop pulling, finish the item, acknowledge, exit
+failure_modes:
+  - unbounded queue, so a worker outage becomes an OOM instead of a visible backlog
+  - non-idempotent jobs, so a redelivery double-charges or double-sends
+  - workers scaled on CPU while the queue grows (queue depth is the real signal)
+  - no dead-letter path, so one poison job blocks the pipeline
+follow_ups:
+  - what do you do when the queue is growing and workers are at max replicas?
+related:
+  - design.bounded-queue
+  - design.worker-pool
+  - k8s.hpa
+sources:
+  - https://aws.amazon.com/builders-library/avoiding-insurmountable-queue-backlogs/

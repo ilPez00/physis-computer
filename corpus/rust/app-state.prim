@@ -1,0 +1,40 @@
+id: rust.app-state
+kind: rust
+title: AppState (Arc<AppState>)
+aliases: app state, shared state, state struct
+tags: architecture, async
+questions:
+  - how do you share a database pool and config between handlers?
+invariant: One state value is built at startup, wrapped in Arc and cloned cheaply into every handler and task.
+answer_30s: Build a single AppState at startup (pools, clients, config, metrics), share it as Arc<AppState>, and keep mutability inside the components rather than in the struct.
+answer_2m: |
+  Why one struct: dependencies become explicit in signatures, construction
+  happens once with real validation (fail fast at boot, not on first request), and
+  there are no globals. The interior-mutability rule keeps concurrency sane: a
+  pool, HTTP client and metrics registry are internally synchronised, so
+  AppState itself is immutable and needs no lock. If AppState starts growing
+  Arc<Mutex<T>>, that is a signal the state wants a single owner behind a
+  channel. For tests, AppState is the seam: build it with fakes and handlers are
+  testable without a server.
+when_to_use:
+  - every server: the dependency container, built once at startup
+avoid_when:
+  - mutable global caches with their own lifecycle (own them in a task with a channel)
+minimal_example: |
+  #[derive(Clone)]
+  struct AppState {
+      db: DbPool,            // internally synchronised
+      http: reqwest::Client, // pool and timeouts configured once
+      cfg: Arc<Config>,      // immutable snapshot
+      metrics: Arc<Metrics>,
+  }
+
+  let state = AppState { db, http, cfg: Arc::new(cfg), metrics };
+  let _ = app(state.clone());
+related:
+  - rust.axum
+  - rust.arc
+  - design.shared-state
+  - rust.connection-pool
+sources:
+  - https://docs.rs/axum/latest/axum/extract/struct.State.html

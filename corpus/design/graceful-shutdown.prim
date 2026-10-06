@@ -1,0 +1,43 @@
+id: design.graceful-shutdown
+kind: design
+title: Graceful shutdown
+aliases: graceful shutdown, drain, connection draining, zero downtime
+tags: operations, reliability
+questions:
+  - what is required for zero-downtime deployments?
+  - how do you deploy a new version without dropping in-flight requests?
+invariant: Stop accepting, finish in-flight work (idempotent or requeueable) within a deadline, then exit -- with clients retrying in the window where the endpoint list and the process disagree.
+answer_30s: Drain on SIGTERM: flip readiness so no new traffic arrives, finish in-flight requests and messages under a bounded timeout, then exit -- and configure the platform's grace period longer than your drain.
+answer_2m: |
+  The reason it is subtle is timing: in Kubernetes the Pod is removed from
+  endpoints asynchronously, so for a moment clients still hold the address of a
+  process that has started shutting down. Clients need retries, and the server
+  needs a drain window (and often a small preStop sleep) so the endpoints update
+  before the listener closes. Workers have their own version: stop pulling from
+  the queue, finish and acknowledge the current item, then exit; anything not
+  finished must be requeued or idempotent. Two things to state explicitly in an
+  interview: the grace period must exceed the drain timeout (otherwise SIGKILL
+  interrupts work), and the same discipline is what makes rolling updates safe.
+when_to_use:
+  - every long-running process, especially behind an orchestrator or load balancer
+minimal_example: |
+  SIGTERM received
+    -> readiness = not ready        (stop receiving new traffic)
+    -> cancel background loops      (stop pulling work)
+    -> await in-flight with timeout (drain)
+    -> exit                         (before grace period expires)
+failure_modes:
+  - exiting immediately, so every deploy drops requests
+  - drain timeout longer than terminationGracePeriodSeconds, so SIGKILL interrupts a write
+  - no client retries, so the unavoidable window produces visible 5xx
+  - workers that stop pulling but keep unacknowledged messages, so work is redelivered later
+related:
+  - k8s.deployment.rolling-update
+  - k8s.probe.readiness
+  - design.health-checking
+  - rust.graceful-shutdown
+  - rust.cancellation
+  - recipe.graceful-shutdown
+  - recipe.zero-downtime-deploy
+sources:
+  - https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination

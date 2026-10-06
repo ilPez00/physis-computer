@@ -1,0 +1,41 @@
+id: k8s.debugging-workflow
+kind: kubernetes
+title: Debugging workflow
+aliases: incident triage, how to debug kubernetes, troubleshooting
+questions:
+  - how do you debug a failing workload in Kubernetes?
+  - users report 500s from a Kubernetes service — what do you do first?
+tags: operations, diagnostics
+invariant: Always separate the four layers in order: object state, events, container logs, then network path.
+answer_30s: Scope first -- which routes, which replicas, since when -- then work the layers in order -- status and events first, then logs, then the network path -- because each layer can only be diagnosed once the one above it is known good.
+answer_2m: |
+  1. Is the object as declared? `kubectl get -o wide` for counts and readiness.
+  2. What does the control plane say? `kubectl describe` plus sorted events: a
+  container that never started has no logs, only an event. 3. What does the
+  process say? logs, with --previous when it crashed. 4. Is traffic reaching
+  it? endpoints, then exec or a debug container for DNS and TCP checks, then
+  the ingress controller's logs. Fixed entry points: CrashLoopBackOff is image
+  or config or app startup; Pending is scheduling or volume; Running but not
+  Ready is a probe or a dependency; Ready but unreachable is selector, port or
+  data path.
+when_to_use:
+  - any production incident where a workload is not behaving as declared
+commands:
+  - kubectl get pods -o wide => which layer is broken: phase, restarts, node
+  - kubectl describe pod api-... => conditions, probe failures, event tail
+  - kubectl get events --sort-by=.metadata.creationTimestamp => the timeline, including objects you did not think to look at
+  - kubectl logs api-... --previous => the crash that ended the last container instance
+failure_modes:
+  - jumping to logs for a Pod whose container never started
+  - restarting things before reading the state that explained the problem
+follow_ups:
+  - how would you tell a slow dependency from a slow service?
+related:
+  - k8s.events
+  - k8s.describe
+  - k8s.logs
+  - k8s.exec
+  - k8s.endpoints
+  - recipe.incident-diagnosis
+sources:
+  - https://kubernetes.io/docs/tasks/debug/

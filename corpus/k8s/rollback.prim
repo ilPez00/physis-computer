@@ -1,0 +1,32 @@
+id: k8s.rollback
+kind: kubernetes
+title: Rollback
+aliases: rollout undo, revert deployment
+tags: operations, deployment
+questions:
+  - a deploy broke production, how do you recover?
+  - users report 500s after a deploy — do you roll back or fix forward?
+invariant: Revision history holds previous Pod templates, so a rollback is a template change the Deployment controller applies again.
+answer_30s: `kubectl rollout undo` switches the Deployment back to a previous ReplicaSet template, and it is itself a rollout, so the same readiness gates apply.
+answer_2m: |
+  Rollback is fast because the old ReplicaSet still exists; it is limited
+  because it only reverts the template. Anything the bad version already did to
+  shared state -- a schema migration, a message format, a cache key change --
+  stays applied. That is the honest answer to the follow-up question: rollout
+  undo is not a transaction, so database changes need backward-compatible
+  migrations (expand/contract) to keep rollback real. `revisionHistoryLimit`
+  decides how far back you can go.
+when_to_use:
+  - a bad template or bad image in production
+commands:
+  - kubectl rollout history deployment/api => which revisions exist and their change cause
+  - kubectl rollout undo deployment/api => revert to the previous template
+  - kubectl rollout status deployment/api => confirm the reverted revision is fully healthy
+failure_modes:
+  - rolling back code while leaving an incompatible migration applied
+  - revisionHistoryLimit too small, so the needed revision is gone
+related:
+  - k8s.deployment.rolling-update
+  - k8s.deployment
+sources:
+  - https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#rolling-back-a-deployment

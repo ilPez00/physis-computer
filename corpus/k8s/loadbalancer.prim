@@ -1,0 +1,31 @@
+id: k8s.service.loadbalancer
+kind: kubernetes
+title: LoadBalancer service
+aliases: loadbalancer, external load balancer
+tags: networking, service, cloud
+questions:
+  - how does a LoadBalancer service actually get an external IP?
+invariant: The cloud controller provisions one external load balancer per Service of this type.
+answer_30s: You request an external load balancer, and the cloud controller manager provisions one and wires it to the Service's NodePorts; you get an external IP or hostname.
+answer_2m: |
+  This is the part people get wrong: the object only expresses intent. A
+  controller (cloud provider, MetalLB, kube-vip) has to exist to satisfy it;
+  without one, the Service stays Pending forever. Each Service gets its own
+  load balancer, which is expensive, and L7 features (paths, hosts, TLS
+  termination) are not its job -- LoadBalancer is L4. That is the standard
+  segue to Ingress: one L7 entry point in front of many L4 ClusterIP services.
+when_to_use:
+  - exposing a single L4 service externally
+avoid_when:
+  - many HTTP services (use one Ingress instead of N load balancers)
+commands:
+  - kubectl get svc -o wide => is EXTERNAL-IP assigned or still <pending>
+  - kubectl describe svc/api => which events explain a Pending external IP
+failure_modes:
+  - no cloud controller or LB implementation, so the IP never appears
+  - assuming the LB health-checks your app path (it usually checks the node's NodePort)
+related:
+  - k8s.service.nodeport
+  - k8s.ingress
+sources:
+  - https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer

@@ -1,0 +1,50 @@
+id: recipe.incident-diagnosis
+kind: recipe
+title: Kubernetes incident diagnosis
+aliases: kubernetes incident, cluster incident, production down kubernetes
+question: a Kubernetes workload broke in production -- how do you diagnose it?
+tags: operations, kubernetes, incident
+properties:
+  - blast radius established early
+  - state read before any restart
+  - the timeline reconstructed from events
+  - recovery and rollback paths identified before acting
+invariant: Establish scope, read the declared-versus-observed state, reconstruct the timeline, and only then act -- restarts destroy evidence.
+answer_30s: Scope the impact, read object status and events before touching anything, follow the layer that is broken (scheduling, image, probe, config, network), and choose rollback or roll-forward deliberately.
+flow: |
+  scope: what is broken, for whom, since when
+     |
+  cluster: nodes ready, control plane healthy, capacity available
+     |
+  workload: replicas desired vs ready, restarts, conditions
+     |
+  pod: events, container state (OOMKilled/ImagePullBackOff), probe results, mounts
+     |
+  network: endpoints, DNS, ingress errors
+     |
+  action: rollback (template) or fix-forward; record the timeline
+compose:
+  - k8s.debugging-workflow => the layer-ordered procedure
+  - k8s.events => the timeline, including objects nobody thought to check
+  - k8s.describe => spec, status, conditions and event tail in one page
+  - k8s.logs => containers that started, and previous instances that crashed
+  - k8s.endpoints => whether traffic is reaching anything
+  - k8s.node => node conditions, pressure and evictions
+  - k8s.etcd => when the failure is control-plane wide
+  - k8s.scheduler => Pending pods and the predicate that failed
+  - k8s.rollback => the fast, rehearsed recovery path
+  - design.observability => which metric or alert told you first
+  - design.health-checking => probes as both cause and symptom
+failure_modes:
+  - deleting pods before reading their state (destroying the evidence)
+  - restarting the whole fleet because one replica was unhealthy
+  - ignoring the empty endpoint list while debugging the application
+  - rolling back code without checking that the schema change permits it
+follow_ups:
+  - how do you find the cause if the pods have already been replaced?
+related:
+  - k8s.debugging-workflow
+  - k8s.events
+  - k8s.rollback
+sources:
+  - https://kubernetes.io/docs/tasks/debug/

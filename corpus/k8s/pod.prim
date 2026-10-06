@@ -1,0 +1,30 @@
+id: k8s.pod
+kind: kubernetes
+title: Pod
+aliases: pod, smallest deployable unit
+tags: workloads, scheduling
+questions:
+  - what is a Pod and why is it not a container?
+invariant: A Pod is one scheduling unit; containers in it share network and can share volumes.
+answer_30s: Pods are the smallest schedulable unit; they group one or more containers that must land on the same node and share a network namespace.
+answer_2m: |
+  The scheduler places a Pod, not a container. Containers in a Pod share the
+  network namespace (one IP, one port space) and optionally share volumes.
+  Pods are mortal: a Pod that dies is not restarted by the Deployment, it is
+  replaced by a new Pod with a new name and IP. That is why Services and not
+  Pod IPs are the stable address.
+when_to_use:
+  - one process per container, tightly coupled helpers only
+avoid_when:
+  - you want scaling, rolling updates or self-healing (use a controller)
+failure_modes:
+  - treating a Pod as stable (name and IP change)
+  - running unrelated containers in one Pod to share a volume by accident
+follow_ups:
+  - why does a Pod get a new IP after a restart?
+related:
+  - k8s.deployment
+  - k8s.service
+  - k8s.scheduler
+sources:
+  - https://kubernetes.io/docs/concepts/workloads/pods/

@@ -1,0 +1,26 @@
+id: quiz.rust.errors
+kind: quiz
+track: rust
+title: Error handling strategy
+question: How do you handle errors in a Rust service, and how would you design an error type?
+expects:
+  - result
+  - question mark
+  - error enum
+  - anyhow
+  - status code
+misuse:
+  - unwrap in handlers => turns a bad request into a panic and a 500
+  - one catch-all error => callers cannot match and react
+related:
+  - rust.result
+  - rust.question-mark
+  - rust.error-enum
+  - rust.anyhow-thiserror
+follow_ups:
+  - how does an error become a 400 instead of a 500?
+  - where does the context chain get lost?
+answer: |
+  Result everywhere; `?` to propagate with From conversions. A typed enum at
+  the API boundary so each variant maps to a status code; anyhow internally for
+  context. Keep the source chain; validate input rather than panicking on it.

@@ -1,0 +1,45 @@
+id: recipe.database-backed-api
+kind: recipe
+title: Database-backed API
+aliases: database backed service, crud with postgres, transactional api
+question: how would you design a service backed by a relational database?
+tags: architecture, database, api
+properties:
+  - bounded database concurrency
+  - transactions that do not hold connections idle
+  - deployable schema changes (expand/contract)
+  - backpressure instead of unbounded request queues
+invariant: The database is the source of truth and a shared, finite resource; every path to it goes through a bounded pool with explicit transaction scope.
+answer_30s: One pooled connection set per replica sized to the database's capacity, short transactions, idempotent writes for retries, expand/contract migrations, and pool wait time as an alerting signal.
+flow: |
+  API replicas (stateless)
+     |
+  connection pool (bounded, acquire timeout)
+     |
+  primary (writes)        read replicas (eventually consistent reads)
+     |
+  migrations: expand -> backfill -> switch -> contract
+compose:
+  - rust.connection-pool => database concurrency is bounded and reusable
+  - design.connection-pool => pool size is derived from database capacity, not from request count
+  - design.schema-migration => schema changes are compatible with both running versions
+  - design.idempotency => retried writes do not duplicate rows
+  - design.timeouts => acquire timeout turns saturation into a fast, visible error
+  - design.backpressure => load is shed or slowed rather than queued in the app
+  - design.observability => pool saturation, query latency and error rate per query shape
+  - k8s.deployment => replicas are interchangeable and roll safely
+  - k8s.job => migrations run as an explicit, retryable Job
+  - rust.app-state => the pool is shared, not constructed per request
+failure_modes:
+  - replicas times pool size exceeding the database's connection limit, so the database refuses connection
+  - long transactions holding a connection while the pool empties (unbounded latency)
+  - reads and writes on the same connection pool with different latency profiles
+  - a migration that locks a hot table during a roll
+follow_ups:
+  - how do you add a column without downtime?
+related:
+  - rust.connection-pool
+  - design.schema-migration
+  - recipe.rest-api
+sources:
+  - https://wiki.postgresql.org/wiki/Number_Of_Database_Connections

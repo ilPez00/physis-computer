@@ -1,0 +1,32 @@
+id: k8s.events
+kind: kubernetes
+title: Events
+aliases: kubectl get events, cluster events
+tags: operations, diagnostics
+questions:
+  - a pod stays Pending, how do you find out why?
+invariant: Events are short-lived records of what controllers did and why, including scheduling and probe failures.
+answer_30s: Events are the scheduler's and kubelet's own explanations: insufficient CPU, unbound PVC, failed probe, image pull error -- visible for a limited retention window.
+answer_2m: |
+  This is the highest-value diagnostic surface in Kubernetes and the one
+  people forget, because the reason for a stuck Pod is almost never in its
+  logs: the container never started. Sorting by timestamp turns the tail of
+  events into a timeline of the incident (image pulled, probe failed, Pod
+  evicted, node NotReady). Retention is short (minutes to an hour by default on
+  many distributions), so for post-mortems they must be exported -- which is the
+  answer to "how would you debug this tomorrow?".
+when_to_use:
+  - any Pending, CrashLooping, evicted or unschedulable object
+commands:
+  - kubectl get events --sort-by=.metadata.creationTimestamp => the incident timeline, oldest to newest
+  - kubectl get events -A --field-selector type=Warning => only the failures, across namespaces
+  - kubectl describe pod api-... => the tail of that Pod's events, with the messages inline
+failure_modes:
+  - events expired before anyone looked
+  - reading only pod logs for a Pod whose container never started
+related:
+  - k8s.describe
+  - k8s.scheduler
+  - k8s.debugging-workflow
+sources:
+  - https://kubernetes.io/docs/reference/kubectl/generated/kubectl_events/

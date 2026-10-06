@@ -1,0 +1,30 @@
+id: k8s.endpoints
+kind: kubernetes
+title: Endpoints and EndpointSlice
+aliases: endpoints, endpointslice
+tags: networking, diagnostics
+questions:
+  - a service returns connection refused, where do you look first?
+invariant: The endpoint list is the actual set of Pod IPs traffic is sent to, derived from the selector plus readiness.
+answer_30s: Endpoints (now EndpointSlices) are the Pod IPs behind a Service; an empty list means no ready Pod matches the selector.
+answer_2m: |
+  This object is the fastest way to separate network problems from workload
+  problems: if endpoints are present, the Service and selector are correct and
+  the fault is in the Pod or the data path; if endpoints are empty, the fault
+  is a label mismatch, a failing readiness probe, or Pods that are not running.
+  EndpointSlice is the scalability replacement (bounded object size) and is
+  what modern clusters and meshes actually read.
+when_to_use:
+  - first diagnostic step for any "service not reachable" report
+commands:
+  - kubectl get endpoints api => is traffic going anywhere at all
+  - kubectl get endpointslice -l kubernetes.io/service-name=api => the modern equivalent, with ready conditions
+  - kubectl describe endpoints api => which addresses and ports it holds
+failure_modes:
+  - ignoring the empty endpoint list and debugging the application instead
+related:
+  - k8s.service
+  - k8s.probe.readiness
+  - k8s.labels-selectors
+sources:
+  - https://kubernetes.io/docs/concepts/services-networking/endpoint-slices/

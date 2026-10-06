@@ -1,0 +1,36 @@
+id: design.producer-consumer
+kind: design
+title: Producer / consumer
+aliases: producer consumer, queue decoupling, decoupling
+question: how do you decouple a fast producer from a slow consumer?
+tags: architecture, concurrency
+questions:
+  - how do you decouple a fast producer from a slow consumer?
+invariant: A queue between the two sides decouples their rates; the queue depth is then a first-class observable.
+answer_30s: Put a bounded queue between producer and consumer so each side runs at its own pace, and make queue depth the signal for scaling and alerting.
+answer_2m: |
+  What decoupling buys: the producer's latency stops depending on the consumer's
+  latency, producers and consumers scale independently, and a consumer restart
+  does not lose work (if the queue is durable). What it costs: a second thing to
+  operate, ordering is now per-partition rather than global, and the system has
+  two failure modes instead of one. The interview-worthy distinction is
+  in-process versus external queue: a channel is cheap and vanishes on restart
+  (fine for derived work), a broker survives and needs idempotent consumers,
+  offsets and replay semantics. Deciding which is required is the actual design
+  question.
+when_to_use:
+  - work with bursty arrival and slow processing; an existing queue already in the stack
+avoid_when:
+  - the producer needs the result synchronously (that is a call, not a queue)
+failure_modes:
+  - unbounded queue so the consumer's slowness is hidden until memory runs out
+  - non-idempotent consumers on a queue that redelivers (at-least-once)
+  - ordering assumed globally when the broker only guarantees it per partition
+related:
+  - design.bounded-queue
+  - design.worker-pool
+  - design.idempotency
+  - rust.tokio-mpsc
+  - recipe.async-job-processing
+sources:
+  - https://aws.amazon.com/builders-library/avoiding-insurmountable-queue-backlogs/

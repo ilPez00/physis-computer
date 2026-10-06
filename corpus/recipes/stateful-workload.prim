@@ -1,0 +1,49 @@
+id: recipe.stateful-workload
+kind: recipe
+title: Stateful workload on Kubernetes
+aliases: stateful service, database on kubernetes, statefulset workload
+question: how would you run a stateful service (for example a database) on Kubernetes?
+tags: architecture, state, storage, kubernetes
+properties:
+  - stable identity per replica
+  - durable storage independent of pod lifetime
+  - ordered start and quorum-aware scaling
+  - backup and restore proved by rehearsal
+invariant: Identity and storage must be stable across restarts, and quorum must be respected when replicas come and go.
+answer_30s: A StatefulSet for stable names and per-replica volumes, a headless Service for peer discovery, ordered readiness, and a tested backup/restore path -- with scaling treated as a quorum operation.
+flow: |
+  headless Service (peer DNS)
+     |
+  StatefulSet: db-0, db-1, db-2 (ordered, stable names)
+     |
+  per-replica PVC (StorageClass, WaitForFirstConsumer)
+     |
+  init: wait for peers -> join -> become ready
+     |
+  operations: snapshot -> offsite copy -> restore drill
+compose:
+  - k8s.stateful-set => stable ordinal identity and per-replica claims
+  - k8s.headless-service => peer addressing without a virtual IP
+  - k8s.pvc => durable storage that outlives the pod
+  - k8s.storage-class => binding mode and reclaim policy decided deliberately
+  - k8s.probe.readiness => a replica only becomes a member when it can serve
+  - design.leader-election => writers and quorum decisions belong to one leader
+  - design.schema-migration => upgrades change on-disk formats; plan them
+  - design.observability => replication lag, disk free, commit latency
+  - k8s.resources.requests => memory and IO reserved so the database is not evicted
+  - k8s.node => anti-affinity and node classes for storage locality
+failure_modes:
+  - scaling down for cost and losing quorum
+  - a volume that cannot attach in another zone, so rescheduling hangs
+  - no restore rehearsal, so backups are theoretical
+  - deleting the StatefulSet and assuming the PVCs went with it (they do not)
+  - pods scheduled onto nodes with poor IO, so latency is unpredictable
+follow_ups:
+  - how do you run a rolling upgrade of this cluster without losing quorum?
+related:
+  - k8s.stateful-set
+  - k8s.headless-service
+  - k8s.pvc
+sources:
+  - https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
+  - https://kubernetes.io/docs/tasks/run-application/run-replicated-stateful-application/

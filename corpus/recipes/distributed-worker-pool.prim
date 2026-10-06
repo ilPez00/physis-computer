@@ -1,0 +1,46 @@
+id: recipe.distributed-worker-pool
+kind: recipe
+title: Distributed worker pool
+aliases: distributed worker pool, consumers across nodes, scaled workers
+question: how would you run a worker pool across many nodes with a shared queue?
+tags: architecture, batch, scaling
+properties:
+  - worker replicas scale with backlog
+  - one item is owned by exactly one worker at a time
+  - poison items do not block the pipeline
+  - deploys drain instead of dropping work
+invariant: Ownership is held through a visibility timeout or lease, so concurrency is bounded per item while replicas scale freely.
+answer_30s: Workers pull from a shared durable queue with a visibility lease (so an unacknowledged item is redelivered), bound their own concurrency, and are scaled on backlog rather than CPU.
+flow: |
+  durable queue (visibility timeout = lease)
+     |
+  worker deployment (N replicas, each with bounded concurrency)
+     |
+  per-item: acquire lease -> process idempotently -> ack
+     |
+  overdue lease -> redelivery (retry count bounded) -> dead letter
+compose:
+  - design.worker-pool => each replica runs a fixed, reasoned concurrency
+  - design.bounded-queue => backlog bounded by shed or backpressure at the producer
+  - design.idempotency => lease expiry means the item can be processed twice
+  - design.retry-backoff => retries before dead-lettering, with jitter
+  - design.leader-election => an alternative when the work is a singleton, not a pool
+  - design.graceful-shutdown => terminate finishes the leased item before exiting
+  - design.observability => backlog, in-flight, lease expiries per worker
+  - k8s.deployment => workers are a normal stateless Deployment
+  - k8s.hpa => scale from backlog, not CPU, when the work is IO-bound
+  - rust.tokio-semaphore => in-process bound that matches the lease budget
+  - rust.tokio-spawn => per-item task with explicit error reporting
+failure_modes:
+  - leases shorter than processing time, so work is duplicated instead of retried
+  - scaling on CPU while the backlog grows (workers are IO-bound)
+  - no dead-letter queue, so one poison item blocks a partition forever
+  - no drain on SIGTERM, so every deploy redelivers in-flight items
+follow_ups:
+  - how do you keep total database connections bounded while scaling workers?
+related:
+  - design.worker-pool
+  - design.idempotency
+  - k8s.hpa
+sources:
+  - https://aws.amazon.com/builders-library/avoiding-insurmountable-queue-backlogs/

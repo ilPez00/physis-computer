@@ -1,0 +1,47 @@
+id: rust.graceful-shutdown
+kind: rust
+title: Graceful shutdown in Tokio
+aliases: graceful shutdown, SIGTERM, drain
+tags: shutdown, resilience, operations
+questions:
+  - how does your service shut down without dropping requests?
+invariant: On shutdown: stop accepting, cancel background work, drain in-flight requests under a deadline, then exit.
+answer_30s: Catch SIGTERM, stop accepting new work, let in-flight requests finish within a bounded timeout, signal workers to drain, then exit before the platform kills the process.
+answer_2m: |
+  The ordering is the content: stop accepting (no new work), cancel the loops
+  and workers, await in-flight tasks with a bounded timeout, exit. In Kubernetes
+  the deadline is terminationGracePeriodSeconds, and the Pod is removed from
+  endpoints slightly after SIGTERM is delivered -- which is why clients need
+  retries and why a small preStop delay or a readiness flip is worth having.
+  Workers follow the same protocol: stop pulling, finish the current item,
+  acknowledge it, exit. Anything that cannot finish is abandoned explicitly, and
+  must be either idempotent or requeued.
+when_to_use:
+  - every long-running service and worker
+minimal_example: |
+  use tokio_util::sync::CancellationToken;
+
+  let cancel = CancellationToken::new();
+  let signal = cancel.clone();
+  tokio::spawn(async move {
+      tokio::signal::ctrl_c().await.ok();
+      signal.cancel();
+  });
+
+  axum::serve(listener, app)
+      .with_graceful_shutdown(async move { cancel.cancelled().await })
+      .await?;
+failure_modes:
+  - no drain, so every deploy drops in-flight requests
+  - an unbounded drain, so the orchestrator SIGKILLs the process mid-write
+  - workers that stop pulling but never acknowledge what they held, so messages are redelivered later
+follow_ups:
+  - what is the interaction with readiness probes during shutdown?
+related:
+  - rust.cancellation
+  - rust.tokio-select
+  - design.graceful-shutdown
+  - k8s.deployment.rolling-update
+  - recipe.graceful-shutdown
+sources:
+  - https://docs.rs/axum/latest/axum/serve/struct.Serve.html

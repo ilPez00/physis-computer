@@ -1,0 +1,50 @@
+id: rust.tokio-broadcast
+kind: rust
+title: tokio::sync::broadcast
+aliases: broadcast channel, fan out
+tags: async, channels
+questions:
+  - how do you send one message to many consumers?
+invariant: Every subscriber receives every message, and a subscriber that falls behind gets Lagged instead of slowing the producer down.
+answer_30s: broadcast is fan-out: each subscriber sees each message, and lag is reported as an error the consumer must handle rather than blocking senders.
+answer_2m: |
+  The lagged semantics are the discipline: unlike mpsc, a broadcast send never
+  waits for the slowest consumer, so Lagged(n) must be treated as "I missed n
+  messages, resynchronise from the source of truth" rather than ignored. That is
+  exactly why broadcast fits notifications, cache invalidation and shutdown
+  announcements, and does not fit durable work. Each receiver is an independent
+  stream, so it is also the natural primitive for propagating config changes to
+  running tasks.
+when_to_use:
+  - notifications, invalidation, shutdown announcements, fan-out where loss is acceptable
+avoid_when:
+  - work that must not be lost, per-message acknowledgement, competing consumers
+minimal_example: |
+  use tokio::sync::broadcast;
+
+  let (tx, _) = broadcast::channel::<Event>(64);
+  let mut sub = tx.subscribe();
+
+  tokio::spawn(async move {
+      loop {
+          match sub.recv().await {
+              Ok(ev) => handle(ev),
+              Err(broadcast::error::RecvError::Lagged(n)) => {
+                  tracing::warn!(n, "missed events, resyncing");
+                  resync().await;
+              }
+              Err(broadcast::error::RecvError::Closed) => break,
+          }
+      }
+  });
+
+  let _ = tx.send(Event::ConfigChanged); // never blocks on a slow subscriber
+failure_modes:
+  - ignoring Lagged, so consumers silently miss updates
+  - using broadcast as a work queue, losing jobs whenever it lags
+related:
+  - rust.tokio-mpsc
+  - rust.tokio-watch
+  - design.cache-invalidation
+sources:
+  - https://docs.rs/tokio/latest/tokio/sync/broadcast/index.html

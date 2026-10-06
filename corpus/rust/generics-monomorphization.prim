@@ -1,0 +1,21 @@
+id: rust.generics-monomorphization
+kind: rust
+title: Generics and monomorphization
+aliases: monomorphization, generic code size
+tags: fundamentals, performance
+questions:
+  - what is the runtime cost of generics in Rust?
+invariant: Generic code is compiled once per concrete type, so dispatch is free at runtime and the cost is binary size plus compile time.
+answer_30s: Generics are monomorphised: you pay at compile time and in binary size, and get zero-cost static dispatch at runtime.
+when_to_use:
+  - library internals and hot paths where dispatch overhead would be measurable
+avoid_when:
+  - huge generic layers where a dyn boundary or enum dispatch is clearer and smaller
+failure_modes:
+  - a public API that instantiates a large generic stack for many types, bloating builds
+  - a deeply generic async stack producing very large futures (the future-too-large warning, fixed by boxing)
+related:
+  - rust.traits
+  - rust.dyn-vs-generic
+sources:
+  - https://doc.rust-lang.org/book/ch10-01-syntax.html

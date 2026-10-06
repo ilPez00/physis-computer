@@ -1,0 +1,43 @@
+id: rust.bounded-concurrency
+kind: rust
+title: Bounded concurrency
+aliases: buffered, buffer_unordered, for_each_concurrent, fan out
+tags: async, streams, backpressure
+questions:
+  - how do you process 10k items concurrently without running them all at once?
+invariant: Concurrency is a limit you choose, so memory stays proportional to the limit rather than to the input.
+answer_30s: Use a stream with buffered(n) or for_each_concurrent(Some(n)) so at most n items are in flight, which keeps memory flat while saturating the limit.
+answer_2m: |
+  Unbounded fan-out is the most common async bug in review: join_all,
+  spawn-per-item and collect-then-wait all create as much work as there is
+  input. buffered(n) preserves order and bounds in-flight futures;
+  buffer_unordered(n) is faster when order does not matter. When the work is
+  CPU-bound rather than IO-bound, the bound is spawn_blocking plus a Semaphore,
+  because a blocked runtime worker is worse than a queued task.
+when_to_use:
+  - paging through a large collection with IO per item, upstream calls under a rate limit
+avoid_when:
+  - work that must be sequential end to end (use a single loop)
+minimal_example: |
+  use futures::stream::{self, StreamExt};
+
+  let results: Vec<_> = stream::iter(urls)
+      .map(|u| fetch(u))
+      .buffered(8)   // at most 8 in flight, order preserved
+      .collect()
+      .await;
+  let _ = results;
+
+  // Order irrelevant: same bound, more throughput.
+  // stream::iter(urls).map(fetch).buffer_unordered(8).collect::<Vec<_>>().await;
+failure_modes:
+  - join_all over a large collection, so memory grows with the input
+  - choosing the bound from the database limit instead of measuring downstream capacity
+related:
+  - rust.tokio-semaphore
+  - rust.async-streams
+  - design.backpressure
+  - design.worker-pool
+  - design.retry-backoff
+sources:
+  - https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.buffered

@@ -1,0 +1,27 @@
+id: quiz.arch.idempotency-retries
+kind: quiz
+track: architecture
+title: Safe retries and duplicate delivery
+question: How do you make an operation safe to retry, and what is exactly-once really?
+expects:
+  - idempotency key
+  - unique constraint
+  - at least once
+  - deduplicate
+  - retention
+misuse:
+  - retry any request => duplicates non-idempotent writes
+  - exactly once because the broker says so => transport does not make your side effect single
+related:
+  - design.idempotency
+  - design.exactly-once
+  - design.retry-backoff
+follow_ups:
+  - how long do you keep the deduplication key?
+  - what if the first attempt failed halfway through its steps?
+answer: |
+  Retry only idempotent work: naturally idempotent operations, keyed writes with
+  a caller-supplied idempotency key and a unique constraint, or a stored outcome
+  returned on replay with a retention policy. Delivery is at-least-once, so
+  single effect comes from deduplication plus idempotent steps, not from the
+  transport.

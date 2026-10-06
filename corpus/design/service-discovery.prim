@@ -1,0 +1,40 @@
+id: design.service-discovery
+kind: design
+title: Service discovery
+aliases: service discovery, registry, name resolution
+tags: networking, distributed systems
+questions:
+  - how does a service find its dependencies' addresses?
+invariant: Callers resolve a stable name to the current set of healthy instances, so addresses are never hardcoded.
+answer_30s: Discovery maps a stable name to healthy endpoints: the platform (Kubernetes DNS/Services) or a registry with health checks, with clients either resolving directly or going through a load balancer.
+answer_2m: |
+  Two models. Server-side: the client calls one address (a Service or load
+  balancer) and the platform routes to healthy backends -- simple clients, one
+  more hop or a virtual IP, and health is the platform's readiness concept.
+  Client-side: the client gets the endpoint list and load balances itself -- one
+  fewer hop and finer control (locality, retries per endpoint), at the cost of
+  discovery logic and a push/watch stream in every client. Kubernetes gives the
+  server-side model for free (Service plus readiness) and the headless Service
+  is the client-side hook. The parts worth naming in an interview: liveness of
+  the name (stale endpoints cause retries and errors), DNS caching/TTL on the
+  client side, and what happens when discovery itself is unavailable (cache the
+  last known set and keep serving).
+when_to_use:
+  - any multi-instance deployment; the mechanism is choosing platform DNS, a registry, or a mesh
+avoid_when:
+  - hardcoded IPs or per-environment config files listing hostnames
+commands:
+  - kubectl get endpoints <svc> => the discovered endpoint set the platform is using
+  - kubectl get svc <svc> => the stable name callers resolve
+failure_modes:
+  - stale registry entries pointing at dead instances, producing retries and errors
+  - hardcoded addresses in configuration, so scaling and failover require a deploy
+  - no plan for discovery unavailability, so a control-plane blip breaks data paths
+related:
+  - k8s.service
+  - k8s.dns-service-discovery
+  - k8s.headless-service
+  - design.health-checking
+  - recipe.service-discovery
+sources:
+  - https://kubernetes.io/docs/concepts/services-networking/service/

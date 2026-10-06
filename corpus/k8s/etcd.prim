@@ -1,0 +1,33 @@
+id: k8s.etcd
+kind: kubernetes
+title: etcd
+aliases: etcd, cluster datastore
+tags: architecture, control-plane, state
+questions:
+  - what happens if etcd is lost?
+invariant: etcd is the only stateful store; it holds every object and is a quorum-replicated log, so writes need a majority and the cluster needs a working quorum.
+answer_30s: etcd holds the entire cluster state as a quorum-replicated key/value log: lose quorum and the control plane goes read-only; lose the data and the cluster state is gone.
+answer_2m: |
+  Quorum is the part to reason about: three members tolerate one failure, five
+  tolerate two, and an even number adds no tolerance. Write latency in etcd is
+  the throughput ceiling of the whole control plane (fsync bound), which is why
+  chatty controllers are an architectural problem, not just a CPU problem. It
+  stores desired and observed state, not application data, and not container
+  filesystems. Operationally: backups plus a tested restore, TLS between
+  members, a separate disk, and alerting on member health and leader elections.
+when_to_use:
+  - capacity, backup/restore and control-plane availability reasoning
+commands:
+  - kubectl get pods -n kube-system => is the etcd member set healthy
+  - kubectl -n kube-system logs <etcd-pod> => slow-apply and leader-election warnings
+failure_modes:
+  - quorum loss from an even member count losing two members
+  - no restore rehearsal, so backups are unproven
+  - disk contention that turns etcd latency into cluster-wide API timeouts
+follow_ups:
+  - how do you restore a cluster from an etcd snapshot?
+related:
+  - k8s.api-server
+  - k8s.controller
+sources:
+  - https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/

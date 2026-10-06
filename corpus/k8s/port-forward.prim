@@ -1,0 +1,30 @@
+id: k8s.port-forward
+kind: kubernetes
+title: port-forward
+aliases: kubectl port-forward, tunnel
+tags: operations, diagnostics
+questions:
+  - how do you reach a cluster service from your laptop?
+invariant: port-forward opens a tunnel through the API server to one Pod (or one Service), bypassing Services and Ingress.
+answer_30s: `kubectl port-forward` tunnels a local port to a Pod port through the API server, so you can test a single replica directly.
+answer_2m: |
+  Because it targets one Pod, it is the correct tool for "is this specific
+  replica broken?" and the wrong tool for "is the Service broken?" -- by
+  construction it skips the Service, endpoints, and ingress path, so a
+  successful port-forward tells you the process is fine and nothing about
+  routing. It is also the standard way to reach a database or admin port that
+  is deliberately not exposed. Long-lived tunnels are for debugging, not
+  access: they die with your terminal and authenticate with your RBAC, not the
+  service's.
+when_to_use:
+  - reaching a specific Pod, a debug port, or a stateful service's admin interface
+commands:
+  - kubectl port-forward svc/api 8080:80 => local 8080 -> service (picks one backing Pod)
+  - kubectl port-forward pod/api-7d9f-abc 5432:5432 => straight to one Pod, bypassing the Service
+failure_modes:
+  - concluding the Service works because port-forward worked (it bypasses it)
+related:
+  - k8s.service
+  - k8s.exec
+sources:
+  - https://kubernetes.io/docs/reference/kubectl/generated/kubectl_port-forward/

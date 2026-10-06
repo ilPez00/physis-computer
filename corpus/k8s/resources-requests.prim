@@ -1,0 +1,31 @@
+id: k8s.resources.requests
+kind: kubernetes
+title: Resource requests
+aliases: requests, cpu request, memory request
+tags: resources, scheduling
+questions:
+  - what do CPU and memory requests actually do?
+  - a pod has been Pending for ten minutes — how do you find out why?
+invariant: Requests are what the scheduler reserves for placement and what QoS is computed from.
+answer_30s: Requests are the guaranteed capacity the scheduler reserves for a Pod, and the basis for QoS class and eviction order.
+answer_2m: |
+  The scheduler places a Pod only where the sum of the requests of what already
+  runs leaves room for this Pod's requests -- so an over-stated request makes a
+  cluster look full, and an under-stated one lets the node be oversubscribed.
+  Kubernetes schedules on requests, not on usage. requests == limits gives the
+  Guaranteed QoS class, which is the most protected profile during node
+  pressure.
+when_to_use:
+  - every container, always; budgets are what make HPA and eviction predictable
+commands:
+  - kubectl describe node <node> => allocated vs allocatable CPU/memory, i.e. why a Pod stays Pending
+  - kubectl get pod api-... -o jsonpath='{.spec.containers[*].resources}' => declared requests/limits
+failure_modes:
+  - requests summed above node allocatable, so Pods are permanently Pending
+  - only limits set, so the scheduler plans with a default request and oversubscribes
+related:
+  - k8s.resources.limits
+  - k8s.scheduler
+  - k8s.hpa
+sources:
+  - https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/

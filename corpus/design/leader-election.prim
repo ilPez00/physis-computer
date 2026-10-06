@@ -1,0 +1,38 @@
+id: design.leader-election
+kind: design
+title: Leader election
+aliases: leader election, single active instance, failover
+tags: distributed systems, coordination, availability
+questions:
+  - how would you make sure only one replica does a periodic job?
+invariant: Exactly one instance holds leadership at a time, leadership is renewed through a lease, and losing the lease stops the leader's work.
+answer_30s: Elect one leader through a lease in a consensus store, have it renew and step down on loss, and make every leader action safe to repeat under a second leader.
+answer_2m: |
+  In-process options first, because they are simpler and often sufficient: a
+  Kubernetes singleton Deployment with replicas 1, a CronJob with
+  concurrencyPolicy Forbid, or a work assignment table that grants each unit to
+  one owner with a lease. Cross-process election is needed when you want
+  high availability of the leader role, and then the mechanism is a
+  lease-based election in a consensus system. The invariant that makes it safe
+  is the same as locking: two leaders can briefly coexist (the previous one
+  has not noticed the loss yet), so every leader action must be idempotent or
+  guarded by a fencing token. Alert on leadership churn and on "no leader",
+  because both are silent in normal dashboards.
+when_to_use:
+  - periodic cluster-wide jobs, cache warmers, single-writer reconciliation
+avoid_when:
+  - work that can be partitioned across replicas (prefer partition and scale instead)
+commands:
+  - kubectl get leases -n kube-system => the same lease mechanism Kubernetes itself uses for controller leadership
+failure_modes:
+  - a leader that keeps working after losing its lease (duplicate side effects)
+  - election on a cache with no consensus, so partitions produce two leaders
+  - no alert on leadership churn, so repeated failover goes unnoticed
+related:
+  - design.distributed-locking
+  - design.idempotency
+  - k8s.cron-job
+  - k8s.reconciliation
+sources:
+  - https://kubernetes.io/docs/concepts/architecture/leases/
+  - https://etcd.io/docs/latest/learning/api/#lease-api

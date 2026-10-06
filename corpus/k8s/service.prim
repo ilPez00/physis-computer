@@ -1,0 +1,34 @@
+id: k8s.service
+kind: kubernetes
+title: Service
+aliases: svc, service discovery object
+tags: networking, discovery
+questions:
+  - how does a Pod get a stable address?
+invariant: A Service is a stable virtual IP and DNS name that load-balances to the Pods currently matching its selector.
+answer_30s: A Service gives a fixed name and cluster IP in front of a changing set of Pod endpoints, selected by labels.
+answer_2m: |
+  Endpoints come from the selector: the endpoints controller adds a Pod when it
+  is Ready and matching, and removes it otherwise. That is the join between
+  probes and traffic -- which is why a wrong readiness probe looks like a
+  networking bug. kube-proxy (or an eBPF data path) implements the virtual IP
+  on each node, so the ClusterIP is reachable from inside the cluster only.
+when_to_use:
+  - any workload that other workloads must reach by a stable name
+commands:
+  - kubectl get svc -A => which services exist, their type and cluster IP
+  - kubectl get endpoints api => is the endpoint list empty, i.e. no Pod is Ready
+  - kubectl describe svc/api => selector, ports and which endpoints back it
+failure_modes:
+  - selector does not match the Pod labels, so endpoints stay empty
+  - targetPort wrong, so connections are refused
+  - Pods unready (probe or crash) so they are removed from the endpoints
+follow_ups:
+  - what is the difference between port, targetPort and nodePort?
+related:
+  - k8s.endpoints
+  - k8s.probe.readiness
+  - k8s.dns-service-discovery
+  - k8s.service.clusterip
+sources:
+  - https://kubernetes.io/docs/concepts/services-networking/service/

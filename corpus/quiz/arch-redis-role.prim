@@ -1,0 +1,28 @@
+id: quiz.arch.redis-role
+kind: quiz
+track: architecture
+title: What belongs in Redis
+question: What would you store in Redis, what would you never store there, and how do you keep it correct?
+expects:
+  - cache
+  - ttl
+  - invalidation
+  - counters
+  - not source of truth
+misuse:
+  - redis as the only datastore => an eviction or restart becomes data loss
+  - locks in the cache instance => eviction silently breaks coordination
+related:
+  - design.redis-cache
+  - design.cache-aside
+  - design.cache-invalidation
+  - design.distributed-locking
+follow_ups:
+  - the instance restarts empty -- walk me through the first minute
+  - how do you invalidate safely across 20 replicas?
+answer: |
+  Derived and reconstructible state: cached reads with TTLs, rate-limit
+  counters, sessions, idempotency keys, short leases. Never the only copy of
+  durable data. Correctness comes from TTL plus explicit invalidation (or
+  versioned keys), atomic commands for counters and leases, and a separate
+  instance for coordination so eviction cannot break locks.

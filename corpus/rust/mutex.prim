@@ -1,0 +1,49 @@
+id: rust.mutex
+kind: rust
+title: Mutex (std and tokio)
+aliases: mutex, lock, critical section
+tags: concurrency, sync
+questions:
+  - what is the difference between std::sync::Mutex and tokio::sync::Mutex?
+invariant: A mutex serializes access to the value it guards, so contention on a hot lock serializes unrelated work; which mutex you choose must match whether the critical section may await.
+answer_30s: std::sync::Mutex blocks the OS thread and suits short non-async critical sections; tokio::sync::Mutex is awaitable and is for guards held across an await.
+answer_2m: |
+  Locking a std Mutex in async code is fine as long as the guard never crosses
+  an await: otherwise you block a runtime worker thread, and the guard is not
+  Send so the future cannot be spawned. A tokio Mutex parks the task instead of
+  the thread, at a higher cost per acquisition. The high-value discipline is to
+  shrink the critical section: read or clone the minimum value out, release,
+  then do the slow work outside the lock. That discipline, plus read-mostly
+  RwLock or message passing, is what keeps a mutex from becoming the bottleneck
+  that autoscaling cannot fix.
+when_to_use:
+  - guarding a small state transition that several tasks must serialize
+avoid_when:
+  - guarding a whole request path, a connection pool, or anything with slow work inside the lock
+minimal_example: |
+  use std::sync::{Arc, Mutex};
+
+  let hits = Arc::new(Mutex::new(0u64));
+  { let mut h = hits.lock().unwrap(); *h += 1; } // critical section only
+
+  // async variant, needed only when the guard crosses an await:
+  let m = tokio::sync::Mutex::new(0u64);
+  let _g = m.lock().await;
+failure_modes:
+  - holding a std MutexGuard across .await
+  - lock contention creating a bottleneck autoscaling cannot fix
+  - poison: a panicking thread poisons the lock so later lock().unwrap() panics too
+misuse:
+  - tokio mutex for everything => pays async overhead for guards that never await
+follow_ups:
+  - how do you avoid contention on a hot path?
+related:
+  - rust.rwlock
+  - rust.raii
+  - rust.arc
+  - rust.mutex-across-await
+  - rust.atomics
+  - design.shared-state
+sources:
+  - https://doc.rust-lang.org/std/sync/struct.Mutex.html
+  - https://docs.rs/tokio/latest/tokio/sync/struct.Mutex.html

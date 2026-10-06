@@ -1,0 +1,31 @@
+id: rust.connection-pool
+kind: rust
+title: Database connection pool
+aliases: pool, sqlx pool, connection management
+tags: database, performance, resilience
+questions:
+  - how do you size a connection pool?
+invariant: A pool bounds concurrent database work, so pool size is a backpressure decision rather than a performance dial.
+answer_30s: Build one pool at startup, size it from the database's capacity (not from request count), set an acquire timeout, and treat pool wait time as a metric.
+answer_2m: |
+  Reasoning: each connection consumes database memory and a scheduler slot, so
+  more connections can make the database slower. Postgres practice suggests a
+  small number of connections relative to database cores, and queueing in the
+  application (where you can shed load) rather than inside the database (where
+  you cannot). max_connections must be below the database limit divided by the
+  number of replicas. The acquire timeout matters more than it looks: without
+  it, a saturated pool turns into unbounded request latency; with it, saturation
+  becomes a fast, visible, shedable error.
+when_to_use:
+  - every service talking to a database or broker with expensive connections
+failure_modes:
+  - a pool per request or per handler, defeating pooling
+  - max_connections multiplied across replicas exceeding the database limit
+  - no acquire timeout, so database slowness becomes an unbounded request queue
+related:
+  - rust.app-state
+  - design.connection-pool
+  - design.backpressure
+  - recipe.database-backed-api
+sources:
+  - https://docs.rs/sqlx/latest/sqlx/struct.Pool.html

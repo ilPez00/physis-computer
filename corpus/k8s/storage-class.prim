@@ -1,0 +1,28 @@
+id: k8s.storage-class
+kind: kubernetes
+title: StorageClass
+aliases: storageclass, provisioner
+tags: storage
+questions:
+  - how does dynamic volume provisioning work?
+invariant: A StorageClass names a provisioner plus parameters, so PVCs are satisfied without pre-created volumes.
+answer_30s: StorageClass is the template a PVC uses to get a volume created on demand, and it carries the reclaim and binding policy.
+answer_2m: |
+  `volumeBindingMode: WaitForFirstConsumer` is the setting worth remembering:
+  it delays provisioning until a Pod is scheduled, so the volume is created in
+  the same zone as the node. With Immediate binding, a multi-zone cluster can
+  schedule a Pod into a zone where its volume cannot be attached, and the Pod
+  hangs in ContainerCreating. The second setting is `reclaimPolicy`: Delete
+  loses data when the PVC goes away, Retain leaves the PV behind for recovery.
+when_to_use:
+  - any cluster offering more than one storage tier (SSD, HDD, replicated)
+commands:
+  - kubectl get storageclass => which provisioners exist and which is default
+  - kubectl get pv => reclaim policy per bound volume
+failure_modes:
+  - Immediate binding with multi-zone nodes, causing unschedulable Pods
+  - Delete reclaim policy on data you meant to keep
+related:
+  - k8s.pvc
+sources:
+  - https://kubernetes.io/docs/concepts/storage/storage-classes/

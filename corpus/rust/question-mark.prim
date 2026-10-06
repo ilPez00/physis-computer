@@ -1,0 +1,41 @@
+id: rust.question-mark
+kind: rust
+title: The ? operator
+aliases: question mark, try operator, propagation
+tags: errors, ergonomics
+questions:
+  - what does the ? operator do and when can you not use it?
+invariant: `?` early-returns on Err after applying `From` conversion to the enclosing function's error type.
+answer_30s: `?` propagates the error to the caller, converting it into the function's error type through `From`.
+answer_2m: |
+  Precisely: on Err(e) it returns Err(From::from(e)) from the enclosing
+  function, so the return type must admit failure (Result, Option, ControlFlow).
+  That is why `?` cannot appear in a function returning a plain value, and why
+  error enums work so well with thiserror's `#[from]`: the propagation site
+  stays one character while the type system tracks the conversion. When you need
+  context, retry, or translation, do that before the `?`.
+when_to_use:
+  - everywhere in fallible functions; the default propagation style
+avoid_when:
+  - when the error must be enriched (context), retried, or mapped first
+minimal_example: |
+  #[derive(Debug, thiserror::Error)]
+  enum LoadError {
+      #[error("io: {0}")] Io(#[from] std::io::Error),
+      #[error("parse: {0}")] Parse(#[from] toml::de::Error),
+  }
+
+  fn load(p: &str) -> Result<Config, LoadError> {
+      let body = std::fs::read_to_string(p)?; // io -> LoadError::Io
+      let cfg = toml::from_str(&body)?;       // parse -> LoadError::Parse
+      Ok(cfg)
+  }
+failure_modes:
+  - losing context, so the log says "no such file" with no idea which file
+  - using ? in a closure returning a plain value (a compile error easily misread as a borrow issue)
+related:
+  - rust.result
+  - rust.error-enum
+  - rust.anyhow-thiserror
+sources:
+  - https://doc.rust-lang.org/std/result/index.html#the-question-mark-operator-

@@ -1,0 +1,38 @@
+id: design.timeouts
+kind: design
+title: Timeouts and deadlines
+aliases: timeout, deadline, latency budget
+tags: resilience, reliability
+questions:
+  - how do you choose a timeout value?
+invariant: Every network call has a deadline derived from the caller's remaining budget, and deadlines shrink as they propagate down the stack.
+answer_30s: Derive timeouts from the caller's latency budget, propagate the remaining deadline downstream, and make inner timeouts strictly smaller than outer ones.
+answer_2m: |
+  The budget view is what makes this an architecture topic rather than a
+  configuration detail: a user-facing 500ms promise means the gateway allows
+  ~450ms, the service ~300ms for the critical upstream, and that upstream's
+  dependency ~150ms. Without an explicit budget, a chain of "reasonable looking"
+  timeouts (each a second or two) produces an aggregate latency nobody would
+  accept. Deadlines should propagate -- pass the remaining budget in a header or
+  context, so a downstream service does not start work that cannot finish -- and
+  they must be paired with the response to expiry: retry (if idempotent), degrade
+  (cached or partial answer), or fail fast with a clear error. A timeout is also
+  a capacity tool: without one, a stalled dependency holds connections, tasks and
+  threads until the pool is empty, which is exactly how one slow dependency
+  takes down an unrelated service.
+when_to_use:
+  - every outbound call; every queue consumer's per-item processing budget
+avoid_when:
+  - no timeout anywhere: the default is waiting forever, and it fails as exhaustion rather than as errors
+failure_modes:
+  - uniform timeouts at every layer, so the aggregate exceeds the user's budget
+  - a timeout without a plan for the expired work (retry, degrade, or clean cancellation)
+  - retrying on timeout without idempotency, duplicating the effect
+related:
+  - rust.timeout
+  - design.retry-backoff
+  - design.circuit-breaker
+  - design.load-shedding
+  - design.observability
+sources:
+  - https://sre.google/sre-book/addressing-cascading-failures/
