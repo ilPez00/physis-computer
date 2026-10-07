@@ -101,7 +101,7 @@ printf 'Prior binaries retained as .backup-<sha256>.\n\n'
 cat <<'NEXT'
 Next:
   cd ~/your-project && physis computer     ← the 30-second tour
-  physis-hud .                             ← the full TUI
+  physis-hud                               ← the full TUI
 
 Nothing here needs an account, a network, or a model download.
 NEXT
