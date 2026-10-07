@@ -1,0 +1,19 @@
+id: design.deadline-propagation
+kind: design
+title: propagating a deadline across a call
+aliases: deadline propagation, context deadline, deadline as a value
+tags: design, timeouts, resilience, distributed-systems
+questions:
+  - how do you pass a deadline to a call you do not control?
+  - is a deadline a header, a context value, or a flag?
+invariant: A deadline is propagated as a context value or header carrying the absolute instant, not re-derived per hop.
+answer_30s: Pass the deadline through (context.WithDeadline in Go, a deadline header in gRPC, or the instant itself); the far side subtracts now in its own clock domain and never assumes the deadline is its own local duration.
+when_to_use:
+  - any outbound RPC whose caller held its own budget
+  - worker queues that must stop work before a hard wall clock
+related:
+  - design.deadline
+  - design.cascading-timeouts
+  - design.timeout-budget
+sources:
+  - https://grpc.io/docs/what-is-grpc/core-improvements/deadlines/

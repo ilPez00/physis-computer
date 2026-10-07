@@ -1,0 +1,21 @@
+id: rust.cancellation-token
+kind: rust
+title: tokio::sync::CancellationToken
+aliases: cancellation token, cancel token, CancellationToken
+tags: async, tokio, graceful-shutdown, cancellation
+questions:
+  - how do you signal stop to many tasks without dropping their work?
+  - how do you separate cancellation from cleanup?
+invariant: A cancellation token signals stop cooperatively; it cancels the wait on a future but does not run the task's cleanup for it.
+answer_30s: Wrap a tokio::sync::CancellationToken around a task; cancel by dropping the handle or calling cancel(), and have the task select on token.cancelled() so it drops its resources and exits its own scope.
+when_to_use:
+  - broadcasting stop to a fan-out of related tasks
+  - decoupling "someone asked us to stop" from "the process is exiting"
+failure_modes:
+  - cancelling a task while it holds an uncommitted transaction or an in-flight write
+  - expecting cancel() to kill the work synchronously instead of waiting for the next await point
+related:
+  - rust.cancellation
+  - rust.graceful-shutdown
+sources:
+  - https://docs.rs/tokio/latest/tokio/task/struct.CancellationToken.html

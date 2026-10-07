@@ -1,0 +1,19 @@
+id: rust.select-timeout
+kind: rust
+title: tokio::select! with a timeout branch
+aliases: select timeout, race a sleep, timeout branch
+tags: async, tokio, timeouts, concurrency
+questions:
+  - how do you race a timeout against a future and cancel the loser?
+invariant: In select!, the timeout branch wins when elapsed; the other branch is dropped, so its resource must be tied to a scope that handles early drop.
+answer_30s: Put a tokio::time::sleep or sleep_until in a tokio::select! branch; the future you do not want completing is dropped when the timeout branch fires, which cancels it.
+when_to_use:
+  - bounding a single await that has no deadline-aware API
+  - racing a heartbeat against a request
+avoid_when:
+  - the call already accepts a deadline or timeout argument (use that instead)
+related:
+  - rust.timeout
+  - rust.cancellation
+sources:
+  - https://docs.rs/tokio/latest/tokio/macro.select.html

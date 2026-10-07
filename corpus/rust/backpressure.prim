@@ -1,0 +1,21 @@
+id: rust.backpressure
+kind: rust
+title: backpressure over tokio channels and semaphores
+aliases: backpressure, bounded channel, semaphore, backpressure propagation
+tags: async, tokio, resilience, concurrency
+questions:
+  - how do you stop producers when consumers fall behind?
+  - where does backpressure travel in an async pipeline?
+invariant: Backpressure propagates upstream only when a downstream buffer is full, and only then; an unbounded buffer makes it disappear as a memory leak instead.
+answer_30s: Use a bounded tokio::sync::mpsc or a tokio::sync::Semaphore as the choke point: a full send or a borrowed permit blocks the producer, which is the signal the upstream stage can shed load or shed work.
+when_to_use:
+  - any multi-stage async pipeline where one stage is slower than the previous
+  - limiting concurrency into a downstream service
+failure_modes:
+  - an unbounded channel that swallows backpressure and grows memory without signalling
+  - a semaphore that is too large so backpressure never reaches the source
+related:
+  - design.backpressure
+  - rust.tokio-mpsc
+sources:
+  - https://docs.rs/tokio/latest/tokio/sync/struct.Semaphore.html

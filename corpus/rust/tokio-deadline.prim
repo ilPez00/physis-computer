@@ -1,0 +1,27 @@
+id: rust.tokio-deadline
+kind: rust
+title: tokio::time deadline (absolute budget)
+aliases: deadline, sleep_until, deadline propagation, absolute timeout
+tags: async, tokio, timeouts, resilience
+questions:
+  - how do you bound work by a wall-clock instant instead of a duration?
+  - how do you pass a deadline across retries without re-counting?
+invariant: A deadline is an absolute instant in time, so it stays correct across retries and restarts; a relative timeout re-counts from wherever it starts.
+answer_30s: Use tokio::time::sleep_until or tokio::time::Deadline for an absolute budget, and race it in a tokio::select! so the work is cancelled the moment the instant passes.
+when_to_use:
+  - cross-retry or cross-restart boundaries where a re-derived timeout would drift
+  - any hop that receives a parent's deadline and must honor it
+failure_modes:
+  - re-deriving a timeout at each retry so the total budget grows without bound
+  - dropping the deadline across an await boundary so a child runs longer than the parent
+minimal_example: |
+  let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+  tokio::select! {
+      _ = tokio::time::sleep_until(deadline) => Err(AppError::Timeout),
+      r = work() => Ok(r?),
+  }
+related:
+  - rust.timeout
+  - design.deadline
+sources:
+  - https://docs.rs/tokio/latest/tokio/time/fn.sleep_until.html

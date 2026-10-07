@@ -1,0 +1,21 @@
+id: design.durable-timeout
+kind: design
+title: durable timeouts (outliving the process)
+aliases: durable timeout, durable timer, durable deadline, externalized timeout
+tags: design, timeouts, async, durability
+questions:
+  - how do you time something out if the process may die?
+  - when is a timeout not in memory?
+invariant: A timeout that must outlive a process or a host failure is externalized — stored in a queue, a lease, or a database — not held in RAM.
+answer_30s: Externalize the deadline (a message with a delivery time, a row with an expires_at, a lease with a TTL); workers poll for work and the system decides staleness from the durable clock, not from an in-process timer.
+when_to_use:
+  - background jobs, queues, and scheduled work
+  - any timeout that gates customer-visible work across a deploy
+avoid_when:
+  - the work is single-host, in-process, and short-lived
+related:
+  - design.graceful-shutdown
+  - recipe.async-job-processing
+  - design.timeouts
+sources:
+  - https://sre.google/sre-book/

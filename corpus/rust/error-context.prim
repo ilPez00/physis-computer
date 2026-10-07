@@ -1,0 +1,21 @@
+id: rust.error-context
+kind: rust
+title: error context across retries
+aliases: error context, anyhow context, retryable error, error chain
+tags: rust, errors, resilience
+questions:
+  - when do you attach context to an error, and when do you stop it?
+  - how do you keep a retry decision in the error without hiding the original cause?
+invariant: An error loses its retry value the moment it drops the context that says where it came from and how many attempts have elapsed.
+answer_30s: Attach per-attempt context with anyhow::Context (attempt number, elapsed, remaining budget) but keep the source chain; classify from the inner cause so a transient cause can be retried while an exhausted deadline cannot.
+when_to_use:
+  - any retry loop that needs to decide retryable vs terminal
+  - bridging a library result into an application error with provenance
+failure_modes:
+  - swallowing the cause with anyhow::anyhow so the original error is gone
+  - retrying on the wrong cause because context did not label the attempt
+related:
+  - rust.anyhow-thiserror
+  - rust.retry
+sources:
+  - https://docs.rs/anyhow/latest/anyhow/trait.Context.html

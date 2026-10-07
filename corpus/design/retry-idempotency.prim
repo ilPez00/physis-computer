@@ -1,0 +1,21 @@
+id: design.retry-idempotency
+kind: design
+title: pairing retries with idempotency
+aliases: retry idempotency, retry safety, retry and idempotency
+tags: design, retries, resilience, correctness
+questions:
+  - when is a retry safe?
+  - how do you avoid doing a write twice?
+invariant: A retry is safe only where the operation is idempotent; pairing retries with idempotency, not with "it might work," is what prevents duplicate side effects.
+answer_30s: Make each retryable operation idempotent first (a client token, a conditional write, a dedupe key), then retry only on the transient causes you can name; retry on a non-idempotent operation and you may double-write, which is worse than not retrying.
+when_to_use:
+  - any call you will retry
+  - external writes, payment calls, state mutations
+avoid_when:
+  - the operation cannot be made idempotent and the cost of a duplicate matters
+related:
+  - design.idempotency
+  - design.retry-backoff
+  - design.circuit-breaker
+sources:
+  - https://sre.google/sre-book/

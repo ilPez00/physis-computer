@@ -1,0 +1,19 @@
+id: design.timeout-budget
+kind: design
+title: timeout budget propagation
+aliases: timeout budget, deadline propagation, remaining budget
+tags: design, timeouts, resilience
+questions:
+  - how much time should a downstream call get?
+  - how do you avoid timeout storms at the edge of a request?
+invariant: Each downstream hop receives a slice of the caller's remaining budget, never more, so timeouts concentrate near the leaf that actually stalls.
+answer_30s: Compute the child timeout as remaining = deadline - now, and pass the deadline (not a fresh timeout) to children so the subtraction is exact at each hop; at the edge, shed load instead of borrowing against a budget you do not have.
+when_to_use:
+  - request handlers that fan out to multiple downstream calls
+  - any client of a service that takes a deadline
+related:
+  - design.cascading-timeouts
+  - design.timeouts
+  - design.load-shedding
+sources:
+  - https://sre.google/sre-book/request-latency/

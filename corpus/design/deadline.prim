@@ -1,0 +1,21 @@
+id: design.deadline
+kind: design
+title: deadline vs timeout
+aliases: deadline, absolute deadline, deadline vs timeout
+tags: design, timeouts, resilience
+questions:
+  - should you use a deadline or a timeout?
+  - what breaks when you convert between them?
+invariant: A deadline is an absolute point in time; a timeout is a duration from now, so only the deadline survives a retry without you re-arithmetic-ing it.
+answer_30s: Use a deadline (absolute instant) when the budget must survive retries, restarts, or handoffs; use a timeout (relative) for a single bounded operation where the caller created the budget.
+when_to_use:
+  - propagating a budget across service hops
+  - anywhere an operation may retry and the total time must not grow
+avoid_when:
+  - the operation is single-shot and the caller has no budget to propagate
+related:
+  - design.timeouts
+  - rust.timeout
+  - design.cascading-timeouts
+sources:
+  - https://sre.google/sre-book/

@@ -1,0 +1,19 @@
+id: design.timeout-classification
+kind: design
+title: timeout classification (retryable vs terminal)
+aliases: timeout classification, retryable timeout, timeout taxonomy
+tags: design, timeouts, retries, resilience
+questions:
+  - is a timeout always worth retrying?
+  - how do you tell a transient timeout from a dead server?
+invariant: Not every timeout is worth retrying; a timeout that fired late after a long wait is usually not the same failure as one at the boundary.
+answer_30s: Classify timeouts as boundary (retry; the remote was probably busy) vs late (do not retry; the remote may already be acting on the request); pair that classification with a circuit breaker and an idempotent call so retry is safe.
+when_to_use:
+  - deciding whether to retry after a timeout
+  - tuning a circuit breaker's response to timeouts
+related:
+  - design.retry-backoff
+  - design.circuit-breaker
+  - design.retry-idempotency
+sources:
+  - https://sre.google/sre-book/

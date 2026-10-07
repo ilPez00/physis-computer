@@ -6,7 +6,7 @@
 > when it did. Run `physis q "…"` in any folder — no account, no network, no
 > model.
 
-`physis q` answers from the 145-primitive knowledge base that ships inside the
+`physis q` answers from the 157-primitive knowledge base that ships inside the
 binary. Every line cites the primitive it came from. Try it in an empty directory:
 
 ```bash
@@ -56,7 +56,7 @@ entity/relation counts are stable:
 physis demo — change the world, deterministically
 
 stage 1 — OBSERVE
-   83 entities, 96 relations
+   84 entities, 96 relations
    revision: rA
 
 stage 2 — ASK
@@ -68,7 +68,7 @@ stage 3 — PLAN FROM THE WORLD
    tests: 3 (request_test_a/b/c — CALLS …::request)
    depends on: log, metrics, retry, timeout   (4 outgoing CALLS)
    constraint: public API unchanged
-   context packet: 243/800 tok · random-projection (semantic: false)
+   context packet: 313/800 tok · random-projection (semantic: false)
 
 stage 4 — ACT (canonical write path)
    edit src/client.rs: rename timeout → deadline
@@ -140,7 +140,7 @@ physis-computer — first run
 physis-hud .
 ```
 
-Twenty panes over one world. The interesting ones:
+20 panes over one world. The interesting ones:
 
 - **Cognition** — `:cog <line>` shows the decision trace live; `r` reruns and
   diffs the selected value. Never generated prose — candidates, scores, backend,
@@ -149,7 +149,7 @@ Twenty panes over one world. The interesting ones:
   object, ask a bounded question, get citations back.
 - **Editor** — `:edit` opens a file, Enter stages a diff, the second Enter
   writes through the canonical path everything else uses. Stale writes refused.
-- **Interview** — 145 knowledge primitives on Kubernetes, Rust and system design,
+- **Interview** — 157 knowledge primitives on Kubernetes, Rust and system design,
   with `:q` to ask, `:arch` to design, `:quiz` to be graded.
 - **Graph / Relations / Scale / Diff** — the world, navigable. `l` cycles the lens
   over the same focused object; `b` walks back.
@@ -180,7 +180,7 @@ physis observe ~/src/api             # persist one of them into .physis-next/
 
 ## Knowledge without code
 
-145 primitives ship inside the binary, so this works in an empty directory —
+157 primitives ship inside the binary, so this works in an empty directory —
 no checkout, no setup:
 
 ```bash
@@ -194,9 +194,9 @@ physis q "how do I deploy without downtime"
 
 ```bash
 # 1. verify the release (Linux x86_64)
-tar -xzf physis-1.1.1-linux-x86_64.tar.gz
-cd physis-1.1.1-linux-x86_64
-sha256sum -c SHA256SUMS.txt            # outer checksums — aborts on any mismatch
+tar -xzf physis-1.2.0-linux-x86_64.tar.gz
+cd physis-1.2.0-linux-x86_64
+sha256sum -c SHA256SUMS.txt            # content checksums — aborts on any mismatch
 
 # 2. install into ~/.local/bin (or: ./install.sh /usr/local/bin)
 ./install.sh --dry-run                  # prints where it writes, what it backs up, no network
@@ -212,7 +212,7 @@ than replaced, so a bad install is reversible without a reinstall. `install.sh`
 is offline: it copies two binaries and the corpus; it makes no network call.
 
 Checksums and signatures for every release are attached to the
-[GitHub Release](https://github.com/ilPez00/physis-computer/releases/tag/v1.1.1)
+[GitHub Release](https://github.com/ilPez00/physis-computer/releases/tag/v1.2.0)
 alongside the archives.
 
 ---
@@ -282,7 +282,7 @@ Stated plainly, because a tool that hides its edges is not worth trusting:
 | Price | free | €79 one-time, €50 for the first 50 |
 | For | you, reading and editing | your **agent**, in your editor |
 | The tools | you type them, see every receipt | it calls them automatically |
-| Surface | 62 MCP tools over the local runtime (read/write/inspection, cognition, memory, interview, ops + workspace — the `physis serve` catalogue; 2 are deprecated aliases retained for compatibility) | 12 licensed, read-only tools for coding agents |
+| Surface | 60 MCP tools over the local runtime (58 distinct: read/write/inspection, cognition, memory, interview, ops + workspace — the `physis serve` catalogue; 2 are deprecated aliases retained for compatibility) | 12 licensed, read-only tools for coding agents |
 | Caller recall | honest about gaps: method dispatch, instance calls and imported-package calls are withheld rather than guessed | improved — not claimed here without a number; see the licensed build |
 | Support | community | licensed support |
 

@@ -50,7 +50,7 @@ refused rather than clobbering a concurrent edit. `u` undoes.
 
 File-granular: editing is per-file, not per-symbol.
 
-### Interview (18) — 145 primitives
+### Interview (18) — 157 primitives
 
 | Verb | Effect |
 |---|---|

@@ -1,0 +1,22 @@
+id: design.cascading-timeouts
+kind: design
+title: cascading timeouts and inner expiry
+aliases: cascading timeouts, inner timeout, timeout nesting
+tags: design, timeouts, resilience
+questions:
+  - how do you nest timeouts without an inner one outliving the outer?
+  - when is a timeout actually a cascade trigger?
+invariant: An inner timeout must be strictly shorter than the caller's remaining deadline, or it can outlive the caller that already gave up.
+answer_30s: Derive each inner timeout from the caller's remaining budget (deadline minus now), never from a fixed round number; when the budget is exhausted, fail fast instead of starting a timer you may not live to meet.
+when_to_use:
+  - layered callers each bounding a downstream call
+  - any recursive or chained timeout setup
+failure_modes:
+  - a fixed inner timeout larger than the caller's remaining budget
+  - starting a timer after the budget is already gone, then waiting on it
+related:
+  - design.timeouts
+  - design.deadline
+  - design.timeout-budget
+sources:
+  - https://sre.google/sre-book/timeouts-and-otherwise/
