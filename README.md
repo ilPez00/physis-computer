@@ -61,6 +61,8 @@ COMMANDS
 
 No signup, no model download, no telemetry. Three binaries (CLI, TUI, GUI).
 
+A 27s GUI screen recording is in `docs/demo/physis-gui-demo.mp4` (with `docs/demo/README.md`). It shows the GUI surface only — graph tab, command box, `/agent` delegation preview→launch→ingest, and the modes — no source code.
+
 ## Shock 1 — zero parameters, on the record
 
 Bench, arm A deterministic (`experiments/cognition/results/system_one_bench.json`, v1.2.0):
