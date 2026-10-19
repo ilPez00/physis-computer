@@ -1,6 +1,11 @@
 # physis-computer
 
-**[CI badge](https://github.com/ilPez00/physis-computer/actions) · Linux x86_64 · version 1.2.0 · Apache-2.0 corpus**
+**Linux x86_64 · version 1.3.1 · Apache-2.0 corpus**
+
+> Development capability for the next qualified release: controlled English,
+> Italian and formal propositions with conditional, replay-checked inference.
+> See [LANGUAGE.md](LANGUAGE.md) and the offline `language-loop.py` receipt runner.
+> Existing `v1.2.0` archives remain immutable; these docs do not replace their bytes.
 
 > **No account. No network. No model. It still decides — and abstains rather than guess.**
 
@@ -54,7 +59,7 @@ COMMANDS
 
 > `tok` in these transcripts is the engine's heuristic content unit — its own budget accounting, not model tokens, not a bill.
 
-No signup, no model download, no telemetry. Two binaries, about 26 MB (measured).
+No signup, no model download, no telemetry. Three binaries (CLI, TUI, GUI).
 
 ## Shock 1 — zero parameters, on the record
 
@@ -75,36 +80,41 @@ Bench, arm A deterministic (`experiments/cognition/results/system_one_bench.json
 
 ## Shock 2 — abstention is the default
 
-`physis computer .` on a stranger's repo — 46 files, never observed:
+`physis computer .` on a stranger's repo — 14 files, never observed:
 
 ```text
 1. THE WORLD
-   46 files, 16 dirs → 75 entities, 12 relations
+   14 files, 2 dirs → 82 entities, 103 relations
 
 2. THE BUSIEST SYMBOLS HERE
-   …
+   12 edges  symbol:src/client.rs::request
+    5 edges  symbol:src/metrics.rs::Counter
+    5 edges  symbol:src/metrics.rs::inc
+    5 edges  symbol:src/pool.rs::Pool
 
 3. A DECISION, AND WHY IT DID NOT MAKE ONE
    CANDIDATES
-     read the graph — p=0.000
-     compile a context packet — p=0.000
-     edit a file — p=0.000
+      read the graph — p=0.000
+      compile a context packet — p=0.000
+      edit a file — p=0.000
    SELECTED
-     (none)
+      (none)
+   BACKEND
+      deterministic:transitions
    CONFIDENCE
-     0.000
+      0.000
    ESCALATED
-     true
+      true
    ↳ no outcome history for any option, so it escalated instead of guessing.
-     a machine that answers anyway is the thing this one refuses to be.
+      a machine that answers anyway is the thing this one refuses to be.
 
 4. WHAT AN AGENT WOULD RECEIVE
    task: "what is this codebase and where do I start" ·
-   31 objects · 677/800 tok · 0 omitted · strategies bm25+graph ·
+   6 objects · 106/800 tok · 0 omitted · strategies bm25+graph ·
    embedder random-projection (semantic: false)
 
 5. NEXT
-   …
+   physis-hud · physis computer --hud · physis mcp <tool> --arg k=v
 
    offline · no account · nothing sent anywhere
 ```
@@ -301,8 +311,9 @@ measurement; different scope, stated as such
 
 ## Knowledge without code
 
-157 primitives ship with the release (installed
-beside the binary), so this works in an empty
+157 primitive files ship with the release (123 primitives + 20
+recipes + 14 quiz — `physis interview`), installed beside the
+binary, so this works in an empty
 directory — no checkout, no setup:
 `physis quiz kubernetes`, `physis q "how do I
 build a queue"`.
@@ -317,23 +328,34 @@ truncated]`. A bigger budget prints the rest.
 
 ```bash
 # 1. verify the release archive — every file, aborts on any mismatch
-tar -xzf physis-1.2.0-linux-x86_64.tar.gz
-cd physis-1.2.0-linux-x86_64
+tar -xzf physis-1.3.1-linux-x86_64.tar.gz
+cd physis-1.3.1-linux-x86_64
 sha256sum -c SHA256SUMS.txt
 ./install.sh                        # → ~/.local/bin (or: ./install.sh /usr/local/bin)
 
-./install.sh --dry-run              # repo clone: where it writes, what it backs up — no network
+./install.sh --dry-run              # the plan: where it writes, what it backs up, what it verifies — no network
 ./install.sh
 
 strace -f -e trace=network physis q "how do I build a queue" 2>&1 | grep -c connect   # 0 — proves it talks to nothing
 ```
 
+First minute, from any directory — not a Physis checkout; the
+corpus is found by a fixed-prefix fallback beside the binary:
+
+```bash
+cd /tmp/empty
+physis demo                         # 7 stages, ends in stage-6 project tests — all PASS
+physis q "how do I build a queue"   # every line cites its primitive
+physis quiz kubernetes              # ask, then grade yourself
+```
+
 Each prior executable is retained as `~/.local/bin/physis.backup-<sha256>`,
 so a bad install is reversible without a reinstall. `install.sh` is
-offline: it verifies the bundled checksums, then copies two binaries
-and the corpus — no network call. Checksums and signatures for every
-release are attached to the
-[GitHub Release](https://github.com/ilPez00/physis-computer/releases/tag/v1.2.0).
+offline: it verifies every bundled file against `SHA256SUMS.txt` — a
+missing manifest or a single mismatch aborts the install — then copies
+two binaries and the corpus. No network call. The archive carries
+checksums only: no signatures ship with this release, and none are
+claimed.
 
 ## What is free, and what is paid
 
@@ -376,7 +398,7 @@ Stated plainly, because a tool that hides its edges is not worth trusting:
 
 - The interview corpus (`corpus/*.prim`) and documentation are
   licensed **Apache-2.0**.
-- The `physis` and `physis-hud` binaries are redistributable with
+- The `physis`, `physis-hud` and `physis-gui` binaries are redistributable with
   this package only, as-is, no reverse engineering — not
   source-available; the engine source is the commercial product.
 

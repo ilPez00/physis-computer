@@ -4,6 +4,40 @@ All notable changes to **physis-computer** (the free, binary-only giveaway) are
 documented here. This file is staged into the public repository alongside the
 binaries; engine source is not — see the License section.
 
+## [Unreleased] — 2026-10-08 (AUD-03: truthful free first minute)
+
+### Fixed
+- `install.sh` no longer installs without verifying. A missing
+  `SHA256SUMS.txt` previously passed silently, and in the `bin/`
+  (public-repo) layout the top-level manifest was never found, so
+  those archives verified nothing at all. The manifest is now
+  required — found beside the script or beside the binaries, verified
+  from its own directory — and a missing manifest or any mismatch
+  aborts the install loudly. `--dry-run` is labeled a plan: it prints
+  the manifest it will verify and fails on a missing one instead of
+  the old "(if present)" wording.
+- README: the CI badge linked to a repository layout that carries no
+  workflows — removed. "about 26 MB" is now the measured 27.6 MB
+  (14.9 + 12.7 MB). The signature promise is gone: the archive ships
+  `SHA256SUMS.txt` only, and the README says checksums only. The
+  `physis computer` transcript is a real run on a never-observed
+  14-file repo (82 entities, 103 relations), replacing counts from a
+  repository that does not ship. The first-minute path (demo → q →
+  quiz, outside any checkout) is written into the Install section
+  with commands proven against this exact build.
+- CHANGELOG: the 1.2.0 demo transcript line said "96 relations"; the
+  binary prints 117. Corrected.
+
+### Known limit (stated, not hand-edited)
+- `dist/physis-1.2.0-linux-x86_64.tar.gz` (sha256 a550e049…) was
+  packed before the AUD-02 fix landed in `scripts/open-release.sh`,
+  so the README inside the archive on disk is still the engine
+  README, not this product README. The fix is committed; the next
+  repack carries the product README. The archive itself was not
+  touched — its hash matches `dist/SHA256SUMS.txt`, and the inner
+  `physis`/`physis-hud` hashes are the ones recorded in the archive's
+  own `SHA256SUMS.txt`.
+
 ## [1.2.0] — 2026-10-07
 
 ### Added
@@ -52,8 +86,8 @@ binaries; engine source is not — see the License section.
 
 ### Changed
 - README overhauled for honesty and reproducibility. The 30-second tour is now
-   the `physis demo` transcript (stable 84 entities / 96 relations, real rA/rB
-   git revisions). The `physis q` hero answer is the verbatim engine output.
+   the `physis demo` transcript (stable 84 entities / 117 relations, real
+   per-run git revisions). The `physis q` hero answer is the verbatim engine output.
    Every prose claim that can be checked is backed by a command below.
 - Free-vs-paid table reconciled with the source: the local runtime exposes the
    full `physis serve` surface (62 tool definitions in the catalogue,

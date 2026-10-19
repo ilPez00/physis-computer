@@ -2,13 +2,14 @@
 # Install physis-computer. Linux x86_64, no root, no package manager.
 #
 # What this does, in two lines:
-#   Verifies the bundled SHA256 checksums, then copies two binaries + the
-#   interview corpus into the destination. No network, no package manager.
+#   Verifies EVERY file against the bundled SHA256SUMS.txt — a missing
+#   manifest or a single mismatch aborts the install — then copies two
+#   binaries + the interview corpus into the destination. No network.
 #
 # Usage:
 #   ./install.sh                 → ~/.local/bin
 #   ./install.sh /usr/local/bin  → that directory (needs write access)
-#   ./install.sh --dry-run       → print what would happen, change nothing
+#   ./install.sh --dry-run       → print the plan, change nothing
 #
 # Every prior executable is kept as .backup-<sha256> rather than replaced, so a
 # bad install is reversible without a reinstall.
@@ -37,11 +38,30 @@ if [ ! -f "$HERE/physis" ] && [ -f "$HERE/bin/physis" ]; then
     BIN_SRC="$HERE/bin"
 fi
 
+# The checksum manifest is required, not optional: an install that cannot
+# prove what it copies must not run. Release tarballs carry it at the top
+# level (beside this script, with entries like ./physis or ./bin/physis);
+# an unpacked repository may carry it beside the binaries instead.
+MANIFEST=""
+for candidate in "$HERE/SHA256SUMS.txt" "$BIN_SRC/SHA256SUMS.txt"; do
+    if [ -f "$candidate" ]; then
+        MANIFEST="$candidate"
+        break
+    fi
+done
+if [ -z "$MANIFEST" ]; then
+    echo "missing SHA256SUMS.txt — no checksum manifest in $HERE or $BIN_SRC" >&2
+    echo "refusing to install: verification is required, not optional" >&2
+    exit 1
+fi
+MANIFEST_DIR="$(cd "$(dirname "$MANIFEST")" && pwd)"
+
 if [ "$DRY_RUN" = 1 ]; then
+    echo "[dry-run] PLAN — prints what would happen. Writes nothing, backs up nothing, verifies nothing yet."
     echo "[dry-run] destination:      $DEST"
     echo "[dry-run] binary source:    $BIN_SRC"
-    echo "[dry-run] would verify:     $BIN_SRC/SHA256SUMS.txt (if present)"
-    for executable in physis physis-hud; do
+    echo "[dry-run] plan: verify every file against $MANIFEST, then copy"
+    for executable in physis physis-hud physis-gui; do
         if [ ! -f "$BIN_SRC/$executable" ]; then
             echo "[dry-run] missing $executable in $BIN_SRC — is this a complete download?" >&2
             exit 1
@@ -56,19 +76,16 @@ if [ "$DRY_RUN" = 1 ]; then
         CORPUS_DEST="$(cd "$DEST" 2>/dev/null && pwd)/../share/physis/corpus" || CORPUS_DEST="$DEST/../share/physis/corpus"
         echo "[dry-run] would install corpus → $CORPUS_DEST"
     fi
-    echo "[dry-run] no files written, no network, no backups created."
     exit 0
 fi
 
-if [ -f "$BIN_SRC/SHA256SUMS.txt" ]; then
-    (cd "$BIN_SRC" && sha256sum -c SHA256SUMS.txt) || {
-        echo "checksum verification failed — refusing to install" >&2
-        exit 1
-    }
-fi
+(cd "$MANIFEST_DIR" && sha256sum -c "$(basename "$MANIFEST")") || {
+    echo "checksum verification failed — refusing to install" >&2
+    exit 1
+}
 
 mkdir -p "$DEST"
-for executable in physis physis-hud; do
+for executable in physis physis-hud physis-gui; do
     if [ ! -f "$BIN_SRC/$executable" ]; then
         echo "missing $executable in $BIN_SRC — is this a complete download?" >&2
         exit 1
@@ -100,8 +117,9 @@ printf 'Installed physis-computer in %s\n' "$DEST"
 printf 'Prior binaries retained as .backup-<sha256>.\n\n'
 cat <<'NEXT'
 Next:
-  cd ~/your-project && physis computer     ← the 30-second tour
-  physis-hud                               ← the full TUI
+  physis demo                                ← the 30-second tour (runs anywhere)
+  cd ~/your-project && physis computer       ← first run on your own code
+  physis-hud                                 ← the full TUI
 
 Nothing here needs an account, a network, or a model download.
 NEXT
