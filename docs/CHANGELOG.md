@@ -4,6 +4,29 @@ All notable changes to **physis-computer** (the free, binary-only giveaway) are
 documented here. This file is staged into the public repository alongside the
 binaries; engine source is not — see the License section.
 
+## [1.6.0] — 2026-10-20
+
+The desktop rework: the same world, arranged left to right, driven by mouse.
+
+### Added
+- A sectioned left rail (views, focus, world, recent) with a colour tick per
+  section and a 3px accent bar on the active view.
+- A window-wide right context panel: the focused object's identity, evidence
+  and blast radius, with mouse actions for every verb it owns.
+- Spawning inside a node: a spawned context packet, a staged agent task and a
+  pinned notebook cell each open as a closable card on that object.
+- The magic box moved to a bottom-centred bar with the hotkey map beside it as
+  clickable compact chips (`⌃⇧Tab`), so the GUI needs no typing.
+- The notebook is a three-column workspace (cells · selected cell · ask) with
+  inline note editing (Enter saves, Esc cancels) and a per-cell context budget
+  that cycles lean → full → off.
+- A semantic colour ramp (raised, recessed, line, soft and faint ink) instead
+  of one-off literals.
+
+### Changed
+- The graph's side panel folded into the window-wide context panel; depth,
+  layout cycling and back now live in the graph header.
+
 ## [1.5.0] — 2026-10-20
 
 The optional-model release: where a measurement justifies a model, the machine

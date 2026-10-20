@@ -1,6 +1,6 @@
 # physis-computer
 
-**Linux x86_64 · version 1.5.0 · Apache-2.0 corpus**
+**Linux x86_64 · version 1.6.0 · Apache-2.0 corpus**
 
 > Controlled English, Italian and formal propositions with conditional,
 > replay-checked inference. See [LANGUAGE.md](LANGUAGE.md) and the offline
@@ -373,8 +373,8 @@ truncated]`. A bigger budget prints the rest.
 
 ```bash
 # 1. verify the release archive — every file, aborts on any mismatch
-tar -xzf physis-1.5.0-linux-x86_64.tar.gz
-cd physis-1.5.0-linux-x86_64
+tar -xzf physis-1.6.0-linux-x86_64.tar.gz
+cd physis-1.6.0-linux-x86_64
 sha256sum -c SHA256SUMS.txt
 ./install.sh                        # → ~/.local/bin (or: ./install.sh /usr/local/bin)
 
