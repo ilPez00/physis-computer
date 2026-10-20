@@ -4,6 +4,40 @@ All notable changes to **physis-computer** (the free, binary-only giveaway) are
 documented here. This file is staged into the public repository alongside the
 binaries; engine source is not — see the License section.
 
+## [1.5.0] — 2026-10-20
+
+The optional-model release: where a measurement justifies a model, the machine
+may use one — and remains fully itself without one. Every model role is
+default-OFF; the default build still opens no socket.
+
+### Added
+- Tier-3 language-surface scorer (`lang_backend=tiny`, feature `llm`): a
+  selection-only engine over the candidates the machine already computed.
+  Strict `VERDICT:<id> P:<0..100>` contract; prose, an off provider, a timeout
+  or a non-candidate id is an abstain, never an answer. `T3` appears in the
+  cascade tier status.
+- Exact target-tokenizer accounting: `--tokenizer` on `compile`/`context` and
+  an optional `tokenizer` argument on MCP `context_stats` print exact tokens
+  next to the heuristic, each named. Counts equal `llama-tokenize` on the same
+  bytes for the reference GGUF.
+- Model role registry with gate verdicts: `physis llm status` renders a ROLES
+  block (embed / causal / language scorer / tokenizer / reranker) with
+  `[loaded|gate-failed|absent]` and the one-line reason; MCP
+  `physis.intelligence` reads the same registry.
+
+### Not in this release (honest limits)
+- Measurement arms (8B-A1B delegate, small-arm matrix, rendering n≥3,
+  ColBERT staging) are a pre-registered protocol, not results; delegate stays
+  experimental, the reranker flag stays off.
+- The scorer's self-reported `P` is uncalibrated until bench weights land;
+  belief fusion and calibration are planned, not shipped.
+- Default behaviour is unchanged: no account, no network, no model.
+
+## [1.4.1] — 2026-10-20
+
+### Fixed
+- The GUI Diff tab no longer panics when no diff was run.
+
 ## [1.4.0] — 2026-10-20
 
 The desktop release: the same world, navigable by mouse without a terminal.
