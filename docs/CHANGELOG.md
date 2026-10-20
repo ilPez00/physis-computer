@@ -4,6 +4,41 @@ All notable changes to **physis-computer** (the free, binary-only giveaway) are
 documented here. This file is staged into the public repository alongside the
 binaries; engine source is not — see the License section.
 
+## [1.4.0] — 2026-10-20
+
+The desktop release: the same world, navigable by mouse without a terminal.
+
+### Added
+- `physis-gui` — 22 tabs, Simple (nine core tabs) and Advanced depths, a
+  `Ctrl+K` command palette with verb and id completion, 14 hotkeys, and
+  `.physis/gui.json` layout persistence.
+- Notebook workspace in the GUI: a selector over every notebook in the
+  store, cell reorder, per-reference re-baseline, compile-context and
+  ask-agent actions.
+- Host in the repository graph: `scan host` / `:host` adds services,
+  processes, sockets, the machine and boot to the same snapshot, with
+  per-kind rendering and a Live inventory.
+- Multi-root worlds: `observe roots` merges N trees with `r0:`/`r1:` ids
+  and a graph badge naming each root.
+- Receipt-bound change: delta flash on every re-observe, hover blast radius
+  (callers, related tests, top three), and a cognition timeline with tier
+  badges and per-step scores.
+- MCP: notebook tools and an opt-in usage ledger (76 tool definitions, 74
+  advertised, 49 on the native tier).
+- One dark theme across GUI and HUD, generated help text, and a Settings
+  usage section that reads the MCP ledger when present.
+
+### Fixed
+- Version guard: adapters and the commercial manifest now agree with the
+  workspace (34 packages).
+- `clippy -D warnings` clean across the workspace; rustfmt clean.
+- The MCP usage-log path resolves through the `Env` provider instead of
+  reading the process environment directly.
+
+### Not in this release
+- macOS, Windows and ARM builds: Linux x86_64 only, GLIBC ≤ 2.39.
+- No recording ships in the repository yet.
+
 ## [Unreleased] — 2026-10-08 (AUD-03: truthful free first minute)
 
 ### Fixed

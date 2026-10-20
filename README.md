@@ -1,13 +1,23 @@
 # physis-computer
 
-**Linux x86_64 · version 1.3.1 · Apache-2.0 corpus**
+**Linux x86_64 · version 1.4.0 · Apache-2.0 corpus**
 
-> Development capability for the next qualified release: controlled English,
-> Italian and formal propositions with conditional, replay-checked inference.
-> See [LANGUAGE.md](LANGUAGE.md) and the offline `language-loop.py` receipt runner.
-> Existing `v1.2.0` archives remain immutable; these docs do not replace their bytes.
+> Controlled English, Italian and formal propositions with conditional,
+> replay-checked inference. See [LANGUAGE.md](LANGUAGE.md) and the offline
+> `language-loop.py` receipt runner. Earlier archives remain immutable; these
+> docs do not replace their bytes.
+
+> **Try it without installing:** the [live workbench](https://praxisweb.xyz/physis/workbench) runs the same observe pass over an uploaded repository — read-only, and the extracted copy is deleted within 30 minutes.
 
 > **No account. No network. No model. It still decides — and abstains rather than guess.**
+
+![The desktop observing a repository and the local host](docs/demo/physis-gui-demo.gif)
+
+*33 seconds of the release binary on a virtual display: the graph over a
+repository, the notebook, the live host inventory (172 services, 420 processes
+on the machine that recorded it), and a re-observe receipt — `flash +1 nodes ·
+-0 nodes · ~3 re-claimed` — after a file changed. No narration, no cuts to a
+different build: every frame is the 1.4.0 binary in `dist/`.*
 
 Free as in free beer: the binaries are gratis, and the
 valuable engine lives in [physis-next](https://github.com/ilPez00/physis-next).
@@ -60,8 +70,6 @@ COMMANDS
 > `tok` in these transcripts is the engine's heuristic content unit — its own budget accounting, not model tokens, not a bill.
 
 No signup, no model download, no telemetry. Three binaries (CLI, TUI, GUI).
-
-A 27s GUI screen recording is in `docs/demo/physis-gui-demo.mp4` (with `docs/demo/README.md`). It shows the GUI surface only — graph tab, command box, `/agent` delegation preview→launch→ingest, and the modes — no source code.
 
 ## Shock 1 — zero parameters, on the record
 
@@ -289,6 +297,41 @@ renders one text frame and exits — for CI, or to confirm
 the binaries are intact. `--setup` prints the honest gap
 report (intelligence, embedder, escalation policy).
 
+## The desktop
+
+`physis-gui` is the same world in a window — 22 tabs, opened on the
+directory you pass (`physis-gui --path .`). It is not a second engine: every
+pane reads the snapshot the CLI observes.
+
+- **Two depths.** Simple mode shows nine core tabs (overview, search,
+  context, notebook, editor, file manager, terminal, settings, help); the
+  header toggle moves to Advanced for all 22. Mode, last tab and recent
+  directories persist in `.physis/gui.json`.
+- **Command palette.** `Ctrl+K` focuses the box with the old line selected.
+  `:nb add|pin|rm|goal|run`, `:edit [path]`, `:fm [path]`, `:term`, `:win`,
+  `:host`, `:usage` and the interview verbs all run from it; Tab completes
+  verbs after `:` and entity ids otherwise, and the help tab is generated
+  from the same verb table the parser reads.
+- **Notebook workspace.** A selector lists every notebook in the store; cells
+  reorder, and each reference row offers re-baseline, compile context, and
+  ask agent (which stages the two-Enter delegate preview).
+- **Host in the same graph.** `scan host` / `:host` observes the local
+  machine with the same adapter `physis host` uses: services, processes,
+  sockets, machine and boot join the repository graph, ranked after tests.
+  The Live tab lists the inventory it read.
+- **More than one root.** Add roots in the sidebar and `observe roots` merges
+  them through `observe_roots` with `r0:`/`r1:` namespaced ids, so two
+  `src/lib.rs` never merge. The graph header names every root.
+- **Receipt-bound change.** Every re-observe diffs the previous snapshot:
+  added nodes get an accent ring, re-claimed ones a warn ring, CHANGED_IN
+  edges glow, and the header prints `+added -removed ~changed` for 1.5 s.
+  Hover shows callers, related tests and the top three callers. The Cognition
+  tab renders the decision trace as a timeline with tier badges (T0a compiled
+  replay / T0 deterministic / T1 embed / T2 model).
+
+No timer-driven animation runs: with no receipt, the update loop schedules no
+frames.
+
 ## It reads any corpus
 
 Rust, TypeScript, JavaScript and Python are parsed for structure
@@ -330,8 +373,8 @@ truncated]`. A bigger budget prints the rest.
 
 ```bash
 # 1. verify the release archive — every file, aborts on any mismatch
-tar -xzf physis-1.3.1-linux-x86_64.tar.gz
-cd physis-1.3.1-linux-x86_64
+tar -xzf physis-1.4.0-linux-x86_64.tar.gz
+cd physis-1.4.0-linux-x86_64
 sha256sum -c SHA256SUMS.txt
 ./install.sh                        # → ~/.local/bin (or: ./install.sh /usr/local/bin)
 
@@ -349,13 +392,14 @@ cd /tmp/empty
 physis demo                         # 7 stages, ends in stage-6 project tests — all PASS
 physis q "how do I build a queue"   # every line cites its primitive
 physis quiz kubernetes              # ask, then grade yourself
+physis-gui --path .                 # a window on the world already observed here; O re-observes
 ```
 
 Each prior executable is retained as `~/.local/bin/physis.backup-<sha256>`,
 so a bad install is reversible without a reinstall. `install.sh` is
 offline: it verifies every bundled file against `SHA256SUMS.txt` — a
 missing manifest or a single mismatch aborts the install — then copies
-two binaries and the corpus. No network call. The archive carries
+three binaries and the corpus. No network call. The archive carries
 checksums only: no signatures ship with this release, and none are
 claimed.
 
@@ -366,13 +410,24 @@ claimed.
 | Price | free | €49 one-time founding (first 25 licences), €79 after |
 | For | you, reading and editing | your **agent**, in your editor |
 | The tools | you type them, see every receipt | it calls them automatically |
-| Surface | the full `physis serve` catalogue: 62 tool definitions — 60 distinct advertised on `tools/list` + 2 deprecated aliases dropped from the wire list but still callable | 12 licensed, read-only tools for coding agents |
+| Surface | the full `physis serve` catalogue: 76 tool definitions — 74 advertised on `tools/list` (49 on the native tier) + 2 deprecated aliases still callable but off the wire list. The measured `tools/list` cost per tier is in [docs/MCP_SURFACE.md](https://github.com/ilPez00/physis-next/blob/main/docs/MCP_SURFACE.md) | 12 licensed, read-only tools for coding agents |
 | Caller recall | honest about gaps: method dispatch, instance calls, imported-package calls and Rust macros are withheld rather than guessed | improved — not claimed here without a number; see the licensed build |
 | Support | community | licensed support |
 
 The binaries here link more of the engine than the paid product does — the free tool is for a human at a terminal, the paid one is for an agent inside an editor. Same code path, different caller.
 
 Want the full engine source and the licensed cross-platform MCP server that calls these tools automatically from your editor? See [Physis Context MCP](https://github.com/ilPez00/physis-context-mcp) and [physis-next](https://github.com/ilPez00/physis-next).
+
+## Where this is going
+
+Not in this release, and no dates: these are gates, not promises.
+
+- **Accepted work crystallizes.** A change whose checks passed can become a
+  quarantined rule or packet template, replayed only after explicit activation
+  and only while its declared dependencies hold. The test is lower marginal
+  cost per accepted task, cold versus warm — not a "learns" badge.
+
+The rule stays the same: a recorded negative is published as a negative, and UNVERIFIABLE is not a pass.
 
 ## What this does not do
 
@@ -407,3 +462,9 @@ Stated plainly, because a tool that hides its edges is not worth trusting:
 ## Changes
 
 See [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
+
+---
+
+If this is useful, star the repository and run `physis demo` on a
+repository you know — the failing check, not the feature list, is the
+interesting part.

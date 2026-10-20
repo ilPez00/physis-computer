@@ -105,3 +105,31 @@ re-observes only when it moved — the status line names the refresh.
 - Symbol-level editing is not implemented; the editor is file-granular.
 - Token figures are heuristic units — a retrieval measurement, not provider
   token accounting or an API bill.
+## The desktop (`physis-gui`)
+
+Same snapshot, same verbs, a window instead of a terminal. Launch with
+`physis-gui --path .`; the header shows the world path and the depth toggle.
+
+| Action | What happens |
+|---|---|
+| `Ctrl+K` | Command box, focused with the previous line selected. |
+| `:`, then `Tab` | Cycles the verb table; without `:` Tab completes entity ids. |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous visible tab (Simple honours its nine). |
+| `F` | Toggle sidebar focus. Plain keys stay quiet while a text field has focus. |
+| `O` | Observe now. |
+| `/` | Open search. |
+| `Ctrl+B` | Notebook. |
+| `Ctrl+E` | Editor. |
+| `Ctrl+F` | File manager. |
+| `Ctrl+T` | Terminal. |
+| `Ctrl+,` | Settings. |
+| `F1` | Help. |
+| `Ctrl+N` / `Ctrl+W` | New window entry / close window. |
+| `:simple` / `:advanced` | Nine core tabs, or all 22. |
+
+Panes that differ from the TUI: the notebook has a selector, per-cell
+reorder and ask-agent staging; the graph offers `scan host` / `:host` and
+multi-root `observe roots`; a re-observe flashes added and re-claimed nodes
+for 1.5 s and prints the delta in the header; hovering a node shows callers,
+related tests and the top three callers; the Cognition tab is a timeline
+with tier badges.
