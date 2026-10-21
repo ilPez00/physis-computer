@@ -1,6 +1,6 @@
 # physis-computer
 
-**Linux x86_64 · version 1.6.0 · Apache-2.0 corpus**
+**Linux x86_64 · version 1.7.0 · Apache-2.0 corpus**
 
 > Controlled English, Italian and formal propositions with conditional,
 > replay-checked inference. See [LANGUAGE.md](LANGUAGE.md) and the offline
@@ -322,6 +322,14 @@ pane reads the snapshot the CLI observes.
 - **More than one root.** Add roots in the sidebar and `observe roots` merges
   them through `observe_roots` with `r0:`/`r1:` namespaced ids, so two
   `src/lib.rs` never merge. The graph header names every root.
+- **Runnable steps.** A notebook cell can be a step — a textbox program in the
+  shipped grammar. `run steps` executes them in cell order, one trace per step,
+  stopping at the first failure, and every step appends its receipt to the
+  observation log. `:nb run` runs them too.
+- **The fleet in the same graph.** `.physis/aion-nodes.json` lists your remote
+  aion nodes; the desktop lists them, paints them on the graph's outer ring, and
+  probes a node's `/status` only when you ask. A node is a remote machine, not
+  a claim about your code, so it never enters the snapshot.
 - **Receipt-bound change.** Every re-observe diffs the previous snapshot:
   added nodes get an accent ring, re-claimed ones a warn ring, CHANGED_IN
   edges glow, and the header prints `+added -removed ~changed` for 1.5 s.
@@ -373,8 +381,8 @@ truncated]`. A bigger budget prints the rest.
 
 ```bash
 # 1. verify the release archive — every file, aborts on any mismatch
-tar -xzf physis-1.6.0-linux-x86_64.tar.gz
-cd physis-1.6.0-linux-x86_64
+tar -xzf physis-1.7.0-linux-x86_64.tar.gz
+cd physis-1.7.0-linux-x86_64
 sha256sum -c SHA256SUMS.txt
 ./install.sh                        # → ~/.local/bin (or: ./install.sh /usr/local/bin)
 

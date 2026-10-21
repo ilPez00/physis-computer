@@ -4,6 +4,22 @@ All notable changes to **physis-computer** (the free, binary-only giveaway) are
 documented here. This file is staged into the public repository alongside the
 binaries; engine source is not — see the License section.
 
+## [1.7.0] — 2026-10-20
+
+Runnable steps and the fleet.
+
+### Added
+- Notebook step cells: a cell can hold a textbox program; `run steps` (or
+  `:nb run`) executes them in cell order, one trace per step, stopping at the
+  first failure, and each run appends a receipt to the observation log.
+- The fleet: configured aion nodes (`.physis/aion-nodes.json`) appear in the
+  context panel and on the graph's outer ring, with `/status` probed only on
+  request. One shared client (`physis-fleet`) now serves the desktop, the HUD
+  and the MCP bridge.
+
+### Not in this release
+- No macOS, Windows or ARM build yet; Linux x86_64 only, GLIBC ≤ 2.39.
+
 ## [1.6.0] — 2026-10-20
 
 The desktop rework: the same world, arranged left to right, driven by mouse.
