@@ -13,6 +13,14 @@
 
 ![The desktop observing a repository and the local host](docs/demo/physis-gui-demo.gif)
 
+<a href="docs/demo/physis-gui-demo-1.8.0.mp4">
+  <img src="docs/demo/social-preview.png" width="640" alt="The 1.8.0 desktop: the graph over a repository, the notebook, the local host, and a change receipt">
+</a>
+
+*The captioned walkthrough (56 s, the 1.8.0 release binary): observe, search,
+compile, the host joining the same world, the notebook, the editor, and the
+receipt that says what changed. `docs/demo/physis-gui-demo-1.8.0.mp4`.*
+
 *33 seconds of the release binary on a virtual display: the graph over a
 repository, the notebook, the live host inventory (172 services, 420 processes
 on the machine that recorded it), and a re-observe receipt — `flash +1 nodes ·
