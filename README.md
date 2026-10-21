@@ -1,6 +1,6 @@
 # physis-computer
 
-**Linux x86_64 · version 1.7.0 · Apache-2.0 corpus**
+**Linux x86_64 · version 1.8.0 · Apache-2.0 corpus**
 
 > Controlled English, Italian and formal propositions with conditional,
 > replay-checked inference. See [LANGUAGE.md](LANGUAGE.md) and the offline
@@ -132,6 +132,28 @@ Bench, arm A deterministic (`experiments/cognition/results/system_one_bench.json
 Every candidate sits at p=0.000 because there is no outcome history
 for any option — the default for a stranger's first question.
 **The honest gap is the report.**
+
+## Shock 3 — a warm session is cheaper; it is not smaller
+
+Paired bench, same model (`gemma4:e2b`), same tasks, same engine
+(`scripts/bench-paired-warm.py`, receipt in `research/paired-warm/`):
+
+| task | cold: engine time | warm: engine time | context tokens not recompiled | model prompt tokens (cold → warm) |
+|---|---|---|---|---|
+| where does the runtime load compiled rules from | 3.19 s | 1.8 ms | 800 | 1283 → 1283 |
+| how does the store decide an observation is new | 3.27 s | 1.1 ms | 775 | 929 → 929 |
+| what invalidates a compiled rule | 3.42 s | 1.1 ms | 790 | 1090 → 1090 |
+| how is a context packet assembled | 3.25 s | 1.3 ms | 795 | 1032 → 1032 |
+
+- The warm arm **reuses** the packet it built before: the engine skips the
+  recompile (3.28 s → 1.3 ms mean) and reports the tokens it did not
+  recompute. The packet is byte-identical (checked by hash, every task).
+- The model reads **exactly the same bytes** in both arms — 1283 → 1283 prompt
+  tokens. A warm session is cheaper for the *engine*; it is not smaller for
+  the *model*. We would rather say that than round it into a token-saving
+  headline.
+- The kill conditions were registered before the run (hit, identical text, no
+  model regression, honest saved-token count): 0 of 16 checks killed.
 
 ## The 30-second tour
 
@@ -330,6 +352,19 @@ pane reads the snapshot the CLI observes.
   aion nodes; the desktop lists them, paints them on the graph's outer ring, and
   probes a node's `/status` only when you ask. A node is a remote machine, not
   a claim about your code, so it never enters the snapshot.
+- **The fleet in the same graph.** `.physis/aion-nodes.json` lists your remote
+  aion nodes; the desktop lists them, paints them on the graph's outer ring, and
+  probes a node's `/status` only when you ask. A node is a remote machine, not
+  a claim about your code, so it never enters the snapshot.
+- **Runnable steps.** A notebook cell can be a step — a textbox program in the
+  shipped grammar. `run steps` executes them in cell order, one trace per step,
+  stopping at the first failure, and every step appends its receipt to the
+  observation log. `:nb run` runs them too.
+- **A warm session is cheaper, not smaller.** Ask the same thing twice: the
+  engine serves the packet it built before (3.28 s → 1.3 ms, 775-800 context
+  tokens not recompiled) and the model reads exactly the same bytes. The
+  numbers are in "Shock 3" above; they are not rounded into a token-saving
+  headline.
 - **Receipt-bound change.** Every re-observe diffs the previous snapshot:
   added nodes get an accent ring, re-claimed ones a warn ring, CHANGED_IN
   edges glow, and the header prints `+added -removed ~changed` for 1.5 s.
@@ -381,8 +416,8 @@ truncated]`. A bigger budget prints the rest.
 
 ```bash
 # 1. verify the release archive — every file, aborts on any mismatch
-tar -xzf physis-1.7.0-linux-x86_64.tar.gz
-cd physis-1.7.0-linux-x86_64
+tar -xzf physis-1.8.0-linux-x86_64.tar.gz
+cd physis-1.8.0-linux-x86_64
 sha256sum -c SHA256SUMS.txt
 ./install.sh                        # → ~/.local/bin (or: ./install.sh /usr/local/bin)
 
