@@ -422,6 +422,8 @@ truncated]`. A bigger budget prints the rest.
 
 ## Install
 
+On Linux x86_64 (64-bit):
+
 ```bash
 # 1. verify the release archive — every file, aborts on any mismatch
 tar -xzf physis-1.8.1-linux-x86_64.tar.gz
@@ -453,6 +455,14 @@ missing manifest or a single mismatch aborts the install — then copies
 three binaries and the corpus. No network call. The archive carries
 checksums only: no signatures ship with this release, and none are
 claimed.
+
+On Windows x86_64, the install is the zip instead: unzip
+`physis-1.8.1-windows-x86_64.zip` anywhere and run `physis-gui.exe` from
+it. The same desktop, corpus and command line work as on Linux; the
+terminal tab is the one piece that cannot: it needs a POSIX pseudo-terminal
+(PTY) and refuses with the reason on Windows. `README-WINDOWS.txt` inside
+the zip says the same thing. The executables are not code-signed. No
+installed copy: the zip runs in place; delete the folder to uninstall.
 
 ## What is free, and what is paid
 

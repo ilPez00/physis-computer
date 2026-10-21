@@ -14,8 +14,17 @@ Editor tabs, and the captioned walkthrough.
   instead of duplicating it. The per-file context budget rides along.
 - The captioned desktop walkthrough (56 s) ships in `docs/demo/`.
 
+### Added (late in the day, still on the same tag)
+- A Windows x86_64 build joins the release after all:
+  `physis-1.8.1-windows-x86_64.zip`, cross-compiled with mingw-w64
+  (`BUILD.txt` inside the zip records provenance). The desktop, corpus and
+  command line work; the terminal tab refuses with a clear reason — a PTY is
+  a POSIX thing and Windows has none. The executables are unsigned.
+
 ### Not in this release
-- No macOS, Windows or ARM build yet; Linux x86_64 only, GLIBC <= 2.39.
+- No macOS or ARM build yet; Linux x86_64 (GLIBC <= 2.39) and Windows x86_64
+  only. Server jobs to build those are returning errors — when they run
+  again, the next patch carries macOS.
 
 ## [1.8.0] — 2026-10-21
 

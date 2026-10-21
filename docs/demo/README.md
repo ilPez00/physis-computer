@@ -17,3 +17,9 @@ Shown, in order:
 
 Contains no source code — GUI surface only. Recorded with ffmpeg x11grab on
 feather; 1280x720, libx264, ~1.7 MB.
+
+`docs/demo/physis-gui-demo-1.8.0.mp4` — 56s captioned walkthrough of the
+1.8.0 desktop: observe, search, compile, the host joining the same world, the
+notebook, the editor, and the receipt that says what changed. Recorded with
+`scripts/record-desktop.sh`; the rig and the facts it encodes are in that
+script's header.
