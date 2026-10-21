@@ -4,6 +4,19 @@ All notable changes to **physis-computer** (the free, binary-only giveaway) are
 documented here. This file is staged into the public repository alongside the
 binaries; engine source is not — see the License section.
 
+## [1.8.1] — 2026-10-21
+
+Editor tabs, and the captioned walkthrough.
+
+### Added
+- The editor keeps tabs: every open file is listed, the front one is marked,
+  each is closable, and opening an object that is already open focuses its tab
+  instead of duplicating it. The per-file context budget rides along.
+- The captioned desktop walkthrough (56 s) ships in `docs/demo/`.
+
+### Not in this release
+- No macOS, Windows or ARM build yet; Linux x86_64 only, GLIBC <= 2.39.
+
 ## [1.8.0] — 2026-10-21
 
 The M2 batch: steps, the fleet, and a warm session that costs less.
