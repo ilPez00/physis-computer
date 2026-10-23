@@ -45,13 +45,14 @@ with **zero learned parameters**, in sub-0.1 ms, with
 no account, no network and no model. The network part
 is checkable after install —
 `strace -f -e trace=network physis q "how do I build a queue" 2>&1 | grep -c connect`
-prints `0`. That `0` is **pinned from a committed receipt** — the release
-plan's step 5: the archive installed into a clean `$HOME`, then
-`network_connects=0`, recorded in
-`docs/plans/2026-10-20-physis-computer-max-shock-release.md`. It is pinned
-because the host that measured it has `strace` and plenty of hosts do not:
-run the command where it exists, and where it does not, the receipt is the
-claim.
+prints `0`. That `0` was re-measured on 2026-10-23 against the published
+1.8.4 archive — a fresh extract, a clean `$HOME`, strace 7.2: `physis q`,
+`physis demo`, `physis computer .`, `physis quiz kubernetes`,
+`physis cheat --track rust` and `physis-hud --snapshot` each print `0`
+connects. The original receipt is the release plan's step 5
+(`network_connects=0`, in
+`docs/plans/2026-10-20-physis-computer-max-shock-release.md`); run the
+command where `strace` exists — where it does not, the receipt is the claim.
 
 `physis q` answers from the 157-primitive
 knowledge base that ships with the release —
@@ -107,6 +108,10 @@ physis computer .                            # your own tree: the candidates, th
 
 The rest of this page is those three commands' output, and the receipt behind
 each number in it.
+
+`physis demo`'s stage 6 executes the fixture's own `cargo test`; on a host with
+no Rust toolchain it reports the honest `constraint: FAIL` instead of skipping
+the check. The engine checks run either way — the verdict is what changes.
 
 ## Shock 1 — zero parameters, on the record
 
@@ -411,14 +416,6 @@ pane reads the snapshot the CLI observes.
   aion nodes; the desktop lists them, paints them on the graph's outer ring, and
   probes a node's `/status` only when you ask. A node is a remote machine, not
   a claim about your code, so it never enters the snapshot.
-- **The fleet in the same graph.** `.physis/aion-nodes.json` lists your remote
-  aion nodes; the desktop lists them, paints them on the graph's outer ring, and
-  probes a node's `/status` only when you ask. A node is a remote machine, not
-  a claim about your code, so it never enters the snapshot.
-- **Runnable steps.** A notebook cell can be a step — a textbox program in the
-  shipped grammar. `run steps` executes them in cell order, one trace per step,
-  stopping at the first failure, and every step appends its receipt to the
-  observation log. `:nb run` runs them too.
 - **A warm session is cheaper, not smaller.** Ask the same thing twice: the
   engine serves the packet it built before (3.28 s → 1.3 ms, 775-800 context
   tokens not recompiled) and the model reads exactly the same bytes. The
@@ -507,9 +504,10 @@ three binaries and the corpus. No network call. The archive carries
 checksums only: no signatures ship with this release, and none are
 claimed.
 
-On Windows x86_64, the install is the zip instead: unzip
-`physis-1.8.3-windows-x86_64.zip` anywhere and run `physis-gui.exe` from
-it. The same desktop, corpus and command line work as on Linux; the
+On Windows x86_64, the install is the zip instead — 1.8.4 ships Linux
+only, so the newest Windows build is `physis-1.8.3-windows-x86_64.zip`:
+unzip it anywhere and run `physis-gui.exe` from it. The same desktop,
+corpus and command line work as on Linux; the
 terminal tab is the one piece that cannot: it needs a POSIX pseudo-terminal
 (PTY) and refuses with the reason on Windows. `README-WINDOWS.txt` inside
 the zip says the same thing. The executables are not code-signed. No
@@ -522,7 +520,7 @@ installed copy: the zip runs in place; delete the folder to uninstall.
 | Price | free | €49 one-time founding (first 25 licences), €79 after |
 | For | you, reading and editing | your **agent**, in your editor |
 | The tools | you type them, see every receipt | it calls them automatically |
-| Surface | the full `physis serve` catalogue: 76 tool definitions — 74 advertised on `tools/list` (49 on the native tier) + 2 deprecated aliases still callable but off the wire list. The measured `tools/list` cost per tier is in [docs/MCP_SURFACE.md](https://github.com/ilPez00/physis-next/blob/main/docs/MCP_SURFACE.md) | 12 licensed, read-only tools for coding agents |
+| Surface | the full `physis serve` catalogue: 78 tool definitions — 76 advertised on `tools/list` (51 on the native tier) + 2 deprecated aliases still callable but off the wire list. The measured `tools/list` cost per tier is in [docs/MCP_SURFACE.md](https://github.com/ilPez00/physis-next/blob/main/docs/MCP_SURFACE.md) | 12 licensed, read-only tools for coding agents |
 | Caller recall | honest about gaps: method dispatch, instance calls, imported-package calls and Rust macros are withheld rather than guessed | improved — not claimed here without a number; see the licensed build |
 | Support | community | licensed support |
 

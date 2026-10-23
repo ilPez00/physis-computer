@@ -51,7 +51,8 @@ The confirmation loop, the desktop's world lens, and TypeScript that resolves.
   it compared serialized bodies, and `created_at` moves. It compares the rule.
 
 ### Not in this release
-- No macOS or ARM build; Linux x86_64 (GLIBC <= 2.39) and Windows x86_64.
+- No macOS, ARM, or new Windows build: 1.8.4 is Linux x86_64
+  (GLIBC <= 2.39) only. The newest Windows zip remains 1.8.3.
 - The overlay is X11-first. The Wayland layer-shell path is not implemented.
 - A real external user has not walked the published path yet; the engine repo
   records a rehearsal (`docs/stranger-01.md`) and the friction it found.
