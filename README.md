@@ -1,6 +1,6 @@
 # physis-computer
 
-**Linux x86_64 · version 1.8.1 · Apache-2.0 corpus**
+**Linux x86_64 · version 1.8.3 · Apache-2.0 corpus**
 
 > Controlled English, Italian and formal propositions with conditional,
 > replay-checked inference. See [LANGUAGE.md](LANGUAGE.md) and the offline
@@ -426,8 +426,8 @@ On Linux x86_64 (64-bit):
 
 ```bash
 # 1. verify the release archive — every file, aborts on any mismatch
-tar -xzf physis-1.8.1-linux-x86_64.tar.gz
-cd physis-1.8.1-linux-x86_64
+tar -xzf physis-1.8.3-linux-x86_64.tar.gz
+cd physis-1.8.3-linux-x86_64
 sha256sum -c SHA256SUMS.txt
 ./install.sh                        # → ~/.local/bin (or: ./install.sh /usr/local/bin)
 
@@ -457,7 +457,7 @@ checksums only: no signatures ship with this release, and none are
 claimed.
 
 On Windows x86_64, the install is the zip instead: unzip
-`physis-1.8.1-windows-x86_64.zip` anywhere and run `physis-gui.exe` from
+`physis-1.8.3-windows-x86_64.zip` anywhere and run `physis-gui.exe` from
 it. The same desktop, corpus and command line work as on Linux; the
 terminal tab is the one piece that cannot: it needs a POSIX pseudo-terminal
 (PTY) and refuses with the reason on Windows. `README-WINDOWS.txt` inside
@@ -494,7 +494,9 @@ The rule stays the same: a recorded negative is published as a negative, and UNV
 
 Stated plainly, because a tool that hides its edges is not worth trusting:
 
-- **Linux x86_64 only.** No macOS, no ARM, no Windows build.
+- **Linux x86_64 and Windows x86_64 only.** No macOS, no ARM. The Windows
+  build is unsigned and its terminal tab refuses with the reason: a PTY is a
+  POSIX thing and Windows has none.
 - **The offline embedder is lexical, not semantic** — it
   reports `semantic: false` on every compile; a semantic
   leg exists behind a feature flag and is off by default.

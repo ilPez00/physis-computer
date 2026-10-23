@@ -4,6 +4,36 @@ All notable changes to **physis-computer** (the free, binary-only giveaway) are
 documented here. This file is staged into the public repository alongside the
 binaries; engine source is not — see the License section.
 
+## [1.8.3] — 2026-10-22
+
+The desktop rebuilt, and the two library crates a third party can depend on.
+
+### Added
+- The desktop overhaul, in four slices: the sidebar is grouped into
+  captioned sections (observe · reason · system) with Settings pinned last;
+  the theme gained tokens and a density knob; the graph view became an
+  instrument — eased edges, weighted layout, a minimap, live sweeps, and
+  cuts that truncate honestly instead of pretending to be complete; the
+  notebook is a workspace now, with chat, insights and an ask row.
+- The machine prepares ahead: intent chips and hover packets tell you what
+  a thing will do before you click it.
+- A pulse bar, a focus echo and a command box that behaves like a surface.
+- `physis-kernel` and `physis-language` are on **crates.io** (Apache-2.0).
+  A third party can now depend on the kernel's observation and relation
+  types, and on the language's checked inference, with `cargo add`.
+  Their READMEs are compiled as doctests, so a snippet cannot ship a
+  variant name that does not exist.
+
+### Fixed
+- The language README named variants that did not exist; it now compiles.
+- Reading a large file no longer costs a full read before the size check.
+
+### Not in this release
+- No macOS or ARM build yet; Linux x86_64 (GLIBC <= 2.39) and Windows x86_64
+  only. The macOS release jobs did not start: GitHub Actions refused them
+  with a billing failure, so the bytes were never built and are not claimed
+  here. When that is settled, the next patch carries macOS.
+
 ## [1.8.1] — 2026-10-21
 
 Editor tabs, and the captioned walkthrough.
@@ -157,7 +187,7 @@ The desktop release: the same world, navigable by mouse without a terminal.
 - macOS, Windows and ARM builds: Linux x86_64 only, GLIBC ≤ 2.39.
 - No recording ships in the repository yet.
 
-## [Unreleased] — 2026-10-08 (AUD-03: truthful free first minute)
+## [1.3.1] — 2026-10-19 (AUD-03: truthful free first minute)
 
 ### Fixed
 - `install.sh` no longer installs without verifying. A missing
