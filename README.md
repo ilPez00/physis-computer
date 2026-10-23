@@ -1,6 +1,8 @@
 # physis-computer
 
-**Linux x86_64 · version 1.8.3 · Apache-2.0 corpus**
+**Compute against the world — offline. No account, no network, no model; it abstains rather than guesses.**
+
+**Linux x86_64 · version 1.8.4 · Apache-2.0 corpus**
 
 > Controlled English, Italian and formal propositions with conditional,
 > replay-checked inference. See [LANGUAGE.md](LANGUAGE.md) and the offline
@@ -27,6 +29,13 @@ on the machine that recorded it), and a re-observe receipt — `flash +1 nodes �
 -0 nodes · ~3 re-claimed` — after a file changed. No narration, no cuts to a
 different build: every frame is the 1.4.0 binary in `dist/`.*
 
+> **The shock in a terminal, 18 seconds:**
+> [`docs/demo/shock-pack.cast`](docs/demo/shock-pack.cast) — the three
+> commands below, recorded from a **fresh install of the public archive**:
+> a cited answer, an abstention, and the engine changing a world and checking
+> its own work. Every frame is the binary you download. Play it with
+> `asciinema play docs/demo/shock-pack.cast`, or just run the three.
+
 Free as in free beer: the binaries are gratis, and the
 valuable engine lives in [physis-next](https://github.com/ilPez00/physis-next).
 This repo exists so you can run the receipts before
@@ -36,7 +45,13 @@ with **zero learned parameters**, in sub-0.1 ms, with
 no account, no network and no model. The network part
 is checkable after install —
 `strace -f -e trace=network physis q "how do I build a queue" 2>&1 | grep -c connect`
-prints `0`:
+prints `0`. That `0` is **pinned from a committed receipt** — the release
+plan's step 5: the archive installed into a clean `$HOME`, then
+`network_connects=0`, recorded in
+`docs/plans/2026-10-20-physis-computer-max-shock-release.md`. It is pinned
+because the host that measured it has `strace` and plenty of hosts do not:
+run the command where it exists, and where it does not, the receipt is the
+claim.
 
 `physis q` answers from the 157-primitive
 knowledge base that ships with the release —
@@ -79,6 +94,20 @@ COMMANDS
 
 No signup, no model download, no telemetry. Three binaries (CLI, TUI, GUI).
 
+## Three commands
+
+After `./install.sh`, from any directory — not a Physis checkout, no account,
+no network, no model:
+
+```bash
+physis demo                                  # 7 stages: observe → act → re-observe → verify → all PASS
+physis q "how do I build a queue"            # a cited answer, offline, from the corpus that ships with it
+physis computer .                            # your own tree: the candidates, the scores, the abstention
+```
+
+The rest of this page is those three commands' output, and the receipt behind
+each number in it.
+
 ## Shock 1 — zero parameters, on the record
 
 Bench, arm A deterministic (`experiments/cognition/results/system_one_bench.json`, v1.2.0):
@@ -98,41 +127,60 @@ Bench, arm A deterministic (`experiments/cognition/results/system_one_bench.json
 
 ## Shock 2 — abstention is the default
 
-`physis computer .` on a stranger's repo — 14 files, never observed:
+`physis computer .` on a tree it has never observed. This transcript is the
+bundled 14-file demo fixture, so every number in it is reproducible:
+`scripts/verify-shock-pack.py` runs this exact case against a fresh extract
+of the public archive and fails if any number here stops coming from the
+installed binary. On your own tree the counts are yours; the shape is the
+same.
 
 ```text
+physis-computer — first run
+
 1. THE WORLD
-   14 files, 2 dirs → 82 entities, 103 relations
+   14 files, 2 dirs → 82 entities, 105 relations
 
 2. THE BUSIEST SYMBOLS HERE
-   12 edges  symbol:src/client.rs::request
-    5 edges  symbol:src/metrics.rs::Counter
-    5 edges  symbol:src/metrics.rs::inc
-    5 edges  symbol:src/pool.rs::Pool
+    12 edges  symbol:src/client.rs::request
+     5 edges  symbol:src/metrics.rs::Counter
+     5 edges  symbol:src/metrics.rs::inc
+     5 edges  symbol:src/pool.rs::Pool
 
 3. A DECISION, AND WHY IT DID NOT MAKE ONE
+   STATE
+     6ed40c9f7d444fbc
    CANDIDATES
-      read the graph — p=0.000
-      compile a context packet — p=0.000
-      edit a file — p=0.000
+     read the graph — p=0.000
+     compile a context packet — p=0.000
+     edit a file — p=0.000
    SELECTED
-      (none)
+     (none)
    BACKEND
-      deterministic:transitions
+     deterministic:transitions
    CONFIDENCE
-      0.000
+     0.000
    ESCALATED
-      true
+     true
+   ESCALATION PATH
+     deterministic:compiled
+     deterministic:transitions
    ↳ no outcome history for any option, so it escalated instead of guessing.
-      a machine that answers anyway is the thing this one refuses to be.
+     a machine that answers anyway is the thing this one refuses to be.
 
 4. WHAT AN AGENT WOULD RECEIVE
-   task: "what is this codebase and where do I start" ·
-   6 objects · 106/800 tok · 0 omitted · strategies bm25+graph ·
+   task: "what is this codebase and where do I start"
+   7 objects · 119/800 tok · 0 omitted · strategies bm25+graph
    embedder random-projection (semantic: false)
+     [symbol] symbol:src/error.rs::is_retryable — rank 0 (fused 0.033)
+     [file] file:src/error.rs — rank 1 (fused 0.032)
+     [file] file:src/timeout.rs — rank 2 (fused 0.016)
+     [file] file:Cargo.toml — rank 3 (fused 0.016)
+     [file] file:src/auth.rs — rank 4 (fused 0.016)
 
 5. NEXT
-   physis-hud · physis computer --hud · physis mcp <tool> --arg k=v
+     physis-hud                 the full TUI: graph, notebook, editor, cognition
+     physis computer --hud       same, launched from here
+     physis mcp <tool> --arg k=v    call any tool an agent calls
 
    offline · no account · nothing sent anywhere
 ```
@@ -174,27 +222,27 @@ Revision hashes are fresh per run; counts are stable:
 physis demo — change the world, deterministically
 
 stage 1 — OBSERVE
-   84 entities, 117 relations
-   revision: cc8d0e9
+   85 entities, 119 relations
+   revision: 1e0e1b3
 
 stage 2 — ASK
    goal: "change timeout handling without breaking callers"
    focus: symbol:src/client.rs::request
 
 stage 3 — PLAN FROM THE WORLD
-   callers: 4 (send_a, send_b, send_c — CALLS …::request)
-   tests: 3 (request_test_a/b/c — CALLS …::request)
+   callers: 4 (send_a, send_b, send_c, main) — CALLS …::request
+   tests: 3 (request_test_a, request_test_b, request_test_c) — CALLS …::request
    depends on: symbol:src/client.rs::retry, symbol:src/client.rs::timeout, symbol:src/client.rs::metrics, symbol:src/client.rs::log
-   context packet: 313/800 tok · random-projection · semantic: false
+   context packet: 326/800 tok · random-projection · semantic: false
 
 stage 4 — ACT (canonical write path)
    edit src/client.rs: rename timeout → deadline
-   wrote file:src/client.rs (1081 bytes) → +15 observations, revision f019077
+   wrote file:src/client.rs (1182 bytes) → +15 observations, revision a57b7c9
    added symbols: ["deadline"]
    removed symbols: ["timeout"]
 
 stage 5 — RE-OBSERVE
-   revision: f019077
+   revision: a57b7c9
    +1 file:src/client.rs --DEFINES--> symbol:src/client.rs::deadline
    +1 symbol:src/client.rs::request --CALLS--> symbol:src/client.rs::deadline
    -1 file:src/client.rs --DEFINES--> symbol:src/client.rs::timeout
@@ -208,14 +256,17 @@ stage 6 — VERIFY
    [PASS] request no longer CALLS timeout (old path removed)
    [PASS] send_a still CALLS request (public API unchanged)
    [PASS] request_test_a still CALLS request (tests still cover target)
+   project tests (executed: cargo test)
+   baseline: pass — test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+   after: pass — test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
    constraint: PASS · blast radius: NONE · tests: PASS
 
 stage 7 — MEMORY
-   remembered in revision f019077
-     203 world write|src/client.rs bytes:1081
-     218 memory memory:demo.f019077 text=physis demo · outcome=renamed timeout→deadline in src/client.rs; constraint=PASS
+   remembered in revision a57b7c9
+     210 world write|src/client.rs bytes:1182
+     225 memory memory:demo.a57b7c9 text=physis demo · outcome=renamed timeout→deadline in src/client.rs; constraint=PASS
 
-   world left at /tmp/physis-demo-4067249
+   world left at /tmp/physis-demo-3908567
 ```
 
 Two things survive scrutiny. First, the engine acts on a
@@ -426,8 +477,8 @@ On Linux x86_64 (64-bit):
 
 ```bash
 # 1. verify the release archive — every file, aborts on any mismatch
-tar -xzf physis-1.8.3-linux-x86_64.tar.gz
-cd physis-1.8.3-linux-x86_64
+tar -xzf physis-1.8.4-linux-x86_64.tar.gz
+cd physis-1.8.4-linux-x86_64
 sha256sum -c SHA256SUMS.txt
 ./install.sh                        # → ~/.local/bin (or: ./install.sh /usr/local/bin)
 

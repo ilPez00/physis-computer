@@ -4,6 +4,58 @@ All notable changes to **physis-computer** (the free, binary-only giveaway) are
 documented here. This file is staged into the public repository alongside the
 binaries; engine source is not — see the License section.
 
+## [1.8.4] — 2026-10-23
+
+The confirmation loop, the desktop's world lens, and TypeScript that resolves.
+
+### Added
+- **Crystallization has a confirmation loop, and it is measured.** A rule
+  compiled from a task is only ever compiled from an outcome a check passed;
+  activation stays a human decision; after activation the rule is judged by
+  what was measured, not by what was claimed. The 10-task experiment in the
+  engine repo: 10/10 first pass served by measured experience, 10/10 replays
+  served by the compiled rules, 0 escalations. `physis cognition --confirm`
+  and the `physis.cognition.confirm` MCP tool expose it; the MCP surface is 78
+  tools.
+- **The desktop overlay** (`physis-gui --overlay`, X11 first): a borderless,
+  always-on-top, semi-transparent shell summoned by Super+Space and dismissed
+  by Esc. It paints the world as a lens over the same deterministic
+  most-related set the application window uses — positions cached per world
+  revision, a radial menu of read-only actions, a keyboard path (Tab, Enter,
+  1-4) and honest focus. `--watch` re-observes on an interval and pulses the
+  edges a delta touched.
+- **A first launch introduces the machine by observing**: an overlay opened on
+  an unobserved tree runs the real pipeline and says what it saw, instead of
+  showing an empty canvas.
+- **TypeScript/TSX imports resolve.** `import { helper } from "./util"` becomes
+  an edge to the file it names (extensionless and `index.ts` in Node's order);
+  a bare specifier becomes a `package:` entity; per-file import bindings decide
+  bare calls; a name that travels through a re-export barrel is a labelled
+  MAY_CALL. Frozen benchmark: precision 1.000, recall 1.000, invented edges 0.
+- **One version, one command.** `just version <n>` rewrites every artifact that
+  carries the release version and then runs the checker, so a bump that misses
+  a location fails in the same command.
+
+### Fixed
+- A compiled rule could never fire: the engine required replay evidence before
+  the first replay, so promotion was unreachable by construction. Activation is
+  now the gate and measurement is the demotion.
+- The transition cache normalised confidence over every action in the log, so
+  ten known actions silently vetoed a confident decision. It normalises over the
+  candidates offered for the decision.
+- Every TypeScript import created a phantom node (`symbol:./util`) that joined
+  with nothing. Unresolved specifiers now produce no entity at all.
+- The root README stated 1.2.0 while the workspace shipped 1.8.3; the version
+  line is now pinned to the workspace version by a test.
+- `physis cognition --confirm` was idempotent only within a one-second window:
+  it compared serialized bodies, and `created_at` moves. It compares the rule.
+
+### Not in this release
+- No macOS or ARM build; Linux x86_64 (GLIBC <= 2.39) and Windows x86_64.
+- The overlay is X11-first. The Wayland layer-shell path is not implemented.
+- A real external user has not walked the published path yet; the engine repo
+  records a rehearsal (`docs/stranger-01.md`) and the friction it found.
+
 ## [1.8.3] — 2026-10-22
 
 The desktop rebuilt, and the two library crates a third party can depend on.
