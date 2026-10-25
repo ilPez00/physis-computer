@@ -71,6 +71,29 @@ The world. `j`/`k` move, Enter focuses the neighbour through the one focus
 system. `/filter DEPENDS_ON` narrows by verb; `lang:ts` and `crate:<name>`
 narrow by where.
 
+### Export, flows, paths, processes (CLI, and the page)
+
+The newest surfaces are one command each, and each answers a question the graph
+tab only hints at:
+
+```bash
+physis export --html world.html --focus symbol:<file>::<name> --code
+physis flows <symbol> --depth 3
+physis path <a> <b> --max-hops 4
+physis processes --limit 12
+```
+
+`export` writes one self-contained page: node colours by kind, typed edges
+(conditional calls dashed), search/depth/predicate filters, a query bar with
+five typed patterns, a blast-radius button, an inspector with typed in/out
+lists, and — with `--code` — numbered source via tokensave when it is present.
+`--mermaid FILE` writes the same graph as a flowchart for your notes.
+
+In the desktop, `/` opens the command palette (tabs + every CLI verb the binary
+reports; entries the GUI cannot run copy `physis …` instead of pretending),
+`ctrl+r` toggles the receipts drawer, and a staged write shows its blast radius
+before the confirm button.
+
 ### Scale (16)
 
 `:zoom out|in|crate|file`. A lower-scale view of the same facts, with the

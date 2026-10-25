@@ -4,9 +4,99 @@ All notable changes to **physis-computer** (the free, binary-only giveaway) are
 documented here. This file is staged into the public repository alongside the
 binaries; engine source is not — see the License section.
 
-## [1.8.4] — 2026-10-23
+## [1.8.7] — 2026-10-25
 
-The confirmation loop, the desktop's world lens, and TypeScript that resolves.
+An agent that can edit its own harness — under a gate that cannot break the
+observer — and a Cypher query that finds symbols past page one.
+
+### Added
+- **Editable harness surface.** The files an agent may edit itself live in
+  `harness/` (skills, sub-agents, scripts, plugins, hooks, always-on text) and
+  are reachable through `physis agent`:
+  `harness_read`, `harness_validate`, `harness_snapshot`, `harness_history`,
+  `harness_apply`, `harness_ppc`, `harness_regain`. Proposals are
+  "omitted-is-inherited" and validated **as a whole** before any write; a
+  rejected proposal changes nothing. Every applied version is stored as a
+  physis observation (`harness:<tree_id>`), so an earlier capability can be
+  regained and combined with a newer one. `harness_ppc` runs one
+  propose–probe–compose cycle and falls back to the previous tree when the
+  probe fails. Structured tools accept a JSON object or a path to a JSON file.
+
+### Fixed
+- `physis cypher` node queries with `WHERE … CONTAINS` searched only the
+  alphabetical first page of objects, so a symbol past page one could never
+  match. Node queries now route through `physis.search` (edge queries already
+  did) and fall back to the list only when there is no usable `WHERE`.
+
+## [1.8.6] — 2026-10-25
+
+A shareable graph view, typed questions without a query language — and a Cypher
+backup that stays off until you ask for it.
+
+### Added
+- **`physis export --html FILE`** — the observed world as one self-contained
+  HTML file: layered dark UI, node colours by kind, predicate-aware edges
+  (conditional calls dashed), hover focus, search, depth filter, predicate
+  toggles, collapsible rails, a query bar with five typed patterns
+  (`calls · imports · deps · flows · find`), a blast-radius marking, and an
+  inspector with typed in/out lists. `--focus ID` exports one neighbourhood;
+  `--code` attaches numbered source snippets (via tokensave when present);
+  `--mermaid FILE` writes the same graph as a Mermaid flowchart.
+- **`physis path A B`** — shortest chain between two objects over typed edges.
+- **`physis processes`** — entry points (nothing calls them) ranked by how much
+  their call chain reaches.
+- **`physis flows`, `review`, `wiki`** — forward CALLS chains, a change-review
+  packet (changed set, per-file dependents, covering tests, explicit
+  "not executed" verdict), and a generated package wiki stamped with the
+  observation revision.
+- **Cypher-subset backup** — `physis cypher "<MATCH … RETURN …>"`, disabled
+  unless `PHYSIS_CYPHER=1`. Node/edge pattern, `CONTAINS`/`=`, projection,
+  limit. Labels map onto real kinds (`Function`→`fn`, `Class`→`struct`,
+  `Interface`→`trait`) and the output says so. The export page answers the same
+  subset over the graph it already holds (`cypher …` in the query bar).
+- **Semantic embedder support** — built with `--features semantic`, the engine
+  uses Ollama (`nomic-embed-text`, 768 dims) when reachable and passes the
+  disjoint semantic self-test. `physis health` now reports the actual embedder
+  instead of a hard-coded "degraded" row.
+
+### Notes
+- The typed verbs remain the primary surface; Cypher is a labelled backup.
+- `PASS` still means: the declared checks executed and passed. No formal proof.
+
+## [1.8.5] — 2026-10-25
+
+A quieter desktop, an editor that picks the symbol, and cache accounting that
+names the provider it can actually measure.
+
+### Added
+- **The workbench is restyled and keyboard-first.** One source of truth for the
+  visible tab list (no duplicate filters to drift), digit jumps `1–9` between
+  tabs, a sidebar cursor (`J`/`K`/`Enter`) with wraparound, hover and selected
+  states drawn from theme tokens (a GU-0 scan fails the build if a colour
+  literal escapes `theme.rs`), and resizable rails whose widths persist across
+  launches with clamped bounds.
+- **The editor picks a symbol, not a file.** `physis-gui` opens a symbol-scoped
+  picker and writes through the canonical path, so a manual edit and an agent
+  edit land in the same world and produce the same receipt.
+- **Anthropic usage is priced like the others.** `physis cache-usage` now
+  recognises the Anthropic Messages dialect (`input_tokens`,
+  `cache_creation_input_tokens`, `cache_read_input_tokens`) with the same
+  honesty rules: creation tokens are billable writes, a one-sided cache field is
+  incomplete telemetry, and nothing is silently treated as a full miss.
+- **`physis solve --exit-code`** maps the solve verdicts (`success`, `failed`,
+  `unverified`) to process exit codes so a script or agent can branch on them
+  without parsing text.
+- **One installer for both MCPs across five harnesses**, with a per-repo helper
+  for command-code and a single cwd-relative entry point.
+
+### Notes
+- The cache-hit saving remains **scoped to DeepSeek**, where 87.82% provider
+  hits and 4.1× cheaper input were measured. Controls on other providers found
+  no prefix caching on the available auth paths, so no cross-provider token
+  claim is made here.
+- `physis-computer` remains offline-first: no account, no network, no model; it
+  abstains rather than guesses.
+
 
 ### Added
 - **Crystallization has a confirmation loop, and it is measured.** A rule

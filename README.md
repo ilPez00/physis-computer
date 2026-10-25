@@ -2,7 +2,7 @@
 
 **Compute against the world — offline. No account, no network, no model; it abstains rather than guesses.**
 
-**Linux x86_64 · version 1.8.4 · Apache-2.0 corpus**
+**Linux x86_64 · version 1.8.7 · Apache-2.0 corpus**
 
 > Controlled English, Italian and formal propositions with conditional,
 > replay-checked inference. See [LANGUAGE.md](LANGUAGE.md) and the offline
@@ -108,6 +108,35 @@ physis computer .                            # your own tree: the candidates, th
 
 The rest of this page is those three commands' output, and the receipt behind
 each number in it.
+
+## What's new in 1.8.6
+
+Four more ways to ask the same world a question, plus one backup that is off
+until you ask for it:
+
+```bash
+physis export --html world.html     # the observed world as ONE self-contained
+                                    # page: typed edges, filters, a query bar,
+                                    # collapsible rails, optional source pane
+physis flows <symbol> --depth 3     # what this call triggers, step by step
+physis path A B --max-hops 4        # how two objects connect
+physis processes --limit 12         # entry points, ranked by reach
+physis review --base R --head R     # changed set + impact + covering tests,
+                                    # with an explicit "not executed" verdict
+physis wiki --out docs/wiki         # generated package pages, revision-stamped
+```
+
+`physis cypher "<MATCH … RETURN …>"` is a **backup** view: a small subset
+(node/edge pattern, `CONTAINS`/`=`, projection, limit) with Cypher labels mapped
+onto the world's real kinds. It refuses unless `PHYSIS_CYPHER=1`, because the
+typed commands are the primary surface and a second query language would be a
+second truth. The export page answers the same shapes in its query bar
+(`calls NAME · imports NAME · deps NAME · flows NAME · find TEXT`).
+
+The desktop gained the matching surface work: a **command palette** (`/`) built
+from the binary's own verb list, a **receipts drawer** (`ctrl+r`), **blast
+radius shown on a staged write**, and a **stop** control on a running harness.
+Everything above runs offline; the export page is a file, not a service.
 
 `physis demo`'s stage 6 executes the fixture's own `cargo test`; on a host with
 no Rust toolchain it reports the honest `constraint: FAIL` instead of skipping
@@ -474,8 +503,8 @@ On Linux x86_64 (64-bit):
 
 ```bash
 # 1. verify the release archive — every file, aborts on any mismatch
-tar -xzf physis-1.8.4-linux-x86_64.tar.gz
-cd physis-1.8.4-linux-x86_64
+tar -xzf physis-1.8.7-linux-x86_64.tar.gz
+cd physis-1.8.7-linux-x86_64
 sha256sum -c SHA256SUMS.txt
 ./install.sh                        # → ~/.local/bin (or: ./install.sh /usr/local/bin)
 
