@@ -1,5 +1,10 @@
 # The tour — twenty panes, in reading order
 
+Every pane is wired, every claim is checkable. Where something is withheld
+(guesswork, unverified claims), the absence is stated — never hidden behind a
+sentence. Run `physis --version` (1.8.7) before you start; the binary is the
+document.
+
 Every key below is wired and reachable. Where a pane has a caveat, the caveat
 is stated rather than left for you to discover.
 

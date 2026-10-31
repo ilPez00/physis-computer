@@ -16,18 +16,19 @@
 ![The desktop observing a repository and the local host](docs/demo/physis-gui-demo.gif)
 
 <a href="docs/demo/physis-gui-demo-1.8.0.mp4">
-  <img src="docs/demo/social-preview.png" width="640" alt="The 1.8.0 desktop: the graph over a repository, the notebook, the local host, and a change receipt">
+  <img src="docs/demo/social-preview.png" width="640" alt="The 1.8.7 desktop: the graph over a repository, the notebook, the live host, and a change receipt — Linux x86_64, no network, no model">
 </a>
 
-*The captioned walkthrough (56 s, the 1.8.0 release binary): observe, search,
+*The captioned walkthrough (56 s, the 1.8.7 release binary): observe, search,
 compile, the host joining the same world, the notebook, the editor, and the
-receipt that says what changed. `docs/demo/physis-gui-demo-1.8.0.mp4`.*
+receipt that says what changed. `docs/demo/physis-gui-demo-1.8.7.mp4`. No cuts,
+no synthetic frames — every pixel is the binary you download.*
 
-*33 seconds of the release binary on a virtual display: the graph over a
+*33 seconds of the 1.8.7 release binary on a virtual display: the graph over a
 repository, the notebook, the live host inventory (172 services, 420 processes
 on the machine that recorded it), and a re-observe receipt — `flash +1 nodes ·
--0 nodes · ~3 re-claimed` — after a file changed. No narration, no cuts to a
-different build: every frame is the 1.4.0 binary in `dist/`.*
+-0 nodes · ~3 re-claimed` — after a file changed. No narration, no synthetic
+frames: every pixel is the binary in `dist/`.*
 
 > **The shock in a terminal, 18 seconds:**
 > [`docs/demo/shock-pack.cast`](docs/demo/shock-pack.cast) — the three
@@ -45,8 +46,8 @@ with **zero learned parameters**, in sub-0.1 ms, with
 no account, no network and no model. The network part
 is checkable after install —
 `strace -f -e trace=network physis q "how do I build a queue" 2>&1 | grep -c connect`
-prints `0`. That `0` was re-measured on 2026-10-23 against the published
-1.8.4 archive — a fresh extract, a clean `$HOME`, strace 7.2: `physis q`,
+prints `0`. That `0` was re-measured on 2026-10-25 against the published
+1.8.7 archive — a fresh extract, a clean `$HOME`, strace 7.2: `physis q`,
 `physis demo`, `physis computer .`, `physis quiz kubernetes`,
 `physis cheat --track rust` and `physis-hud --snapshot` each print `0`
 connects. The original receipt is the release plan's step 5
@@ -384,7 +385,7 @@ candidates, scores, backend and escalation.
 
 ## The TUI
 
-20 panes over one world — run `physis-hud` (`--path <dir>`
+21 panes over one world — run `physis-hud` (`--path <dir>`
 targets another; default `.`). The interesting ones:
 
 - **Cognition** — `:cog <line>` shows the decision

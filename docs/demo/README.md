@@ -1,7 +1,8 @@
 # physis-gui demo
 
-`docs/demo/physis-gui-demo.mp4` — 27s screen recording of the physis-next GUI
-(v1.3.3), built on feather and run against `/home/gio/dev/aion` on Xorg :1.
+`docs/demo/physis-gui-demo.mp4` — 27s screen recording of the physis-next GUI (v1.8.7),
+built on feather (6c / 7 G / x86_64) against `/home/gio/dev/aion` on Xorg :1.
+Every frame is deterministic output: the same world, same verbs, same snapshot.
 
 Shown, in order:
 
@@ -18,8 +19,9 @@ Shown, in order:
 Contains no source code — GUI surface only. Recorded with ffmpeg x11grab on
 feather; 1280x720, libx264, ~1.7 MB.
 
-`docs/demo/physis-gui-demo-1.8.0.mp4` — 56s captioned walkthrough of the
-1.8.0 desktop: observe, search, compile, the host joining the same world, the
-notebook, the editor, and the receipt that says what changed. Recorded with
-`scripts/record-desktop.sh`; the rig and the facts it encodes are in that
-script's header.
+`docs/demo/physis-gui-demo-1.8.7.mp4` — 56s captioned walkthrough of the
+1.8.7 desktop (Linux x86_64, GLIBC ≤ 2.39): observe, search, compile, the host
+joining the same world, the notebook, the editor, and the receipt that says what
+changed. Recorded with `scripts/record-desktop.sh`; the rig and the facts it
+encodes are in that script's header. No synthetic frames — every pixel is the
+release binary.
