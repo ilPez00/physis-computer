@@ -557,6 +557,34 @@ The binaries here link more of the engine than the paid product does — the fre
 
 Want the full engine source and the licensed cross-platform MCP server that calls these tools automatically from your editor? See [Physis Context MCP](https://github.com/ilPez00/physis-context-mcp) and [physis-next](https://github.com/ilPez00/physis-next).
 
+## Audit — 2026-11-01
+
+Re-measured on the development line that follows this release, not from the
+docs. Receipts and reproduction commands:
+[`physis-next/docs/plans/2026-11-01-live-audit-findings.md`](https://github.com/ilPez00/physis-next/blob/main/docs/plans/2026-11-01-live-audit-findings.md).
+
+- **`tools/list` on the shipped 1.8.7 binary: 76** — the number in the table
+  above was right; the current source line advertises 83. `physis
+  capabilities` prints 85, so it is the one surface that drifts.
+- **`physis demo`: exit 0 in 829 ms**, offline, in an empty directory.
+- **Observe**: 4,000 files into 196,105 entities / 360,204 relations in 34 s
+  (default cap; `truncated: true` beyond it), warm re-observe 25.7 s.
+- **Search is the slow path**: 16.6 s cold on a 1.29 M-line store, because
+  the BM25 index is built per process and not persisted.
+- **Packets honour the budget but currently ship names, not excerpts**:
+  12,319 candidate tokens selected down to 1,190 on a prose corpus, and the
+  assembled text was file paths plus three chunks. Measured, and scheduled
+  first in the remediation plan.
+- **The offline embedder remains lexical** (`semantic: false`), as the "What
+  this does not do" section already says.
+- **Invariants**: `deterministic-replay` PASS where revision events exist;
+  `append-only-history` FAILs on the project's own historical store (a
+  non-monotonic seq at index 365,375 from an older append). Reported, not
+  repaired silently.
+
+Nothing above changes what this release does; it changes what you can check
+before trusting a sentence in it.
+
 ## Where this is going
 
 Not in this release, and no dates: these are gates, not promises.
