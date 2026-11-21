@@ -38,7 +38,7 @@ frames: every pixel is the binary in `dist/`.*
 > `asciinema play docs/demo/shock-pack.cast`, or just run the three.
 
 Free as in free beer: the binaries are gratis, and the
-valuable engine lives in [physis-next](https://github.com/ilPez00/physis-next).
+valuable engine lives in physis-next (private — this repo is its public release).
 This repo exists so you can run the receipts before
 you buy the engine — that is the whole funnel. Every
 decision below was made by a deterministic program
@@ -95,6 +95,19 @@ COMMANDS
 > `tok` in these transcripts is the engine's heuristic content unit — its own budget accounting, not model tokens, not a bill.
 
 No signup, no model download, no telemetry. Three binaries (CLI, TUI, GUI).
+
+
+> **TL;DR — 90 seconds.** The current Physis engine as a free offline release: a typed
+> world model of your codebase. `physis demo` runs a 7-stage observe→act→verify loop with
+> checks; `physis q "…"` answers with citations to primitives and abstains when it cannot;
+> `physis-gui` opens the desktop. No account, no network, no model in the binary.
+> **Evidence (2026-11-21, fresh release download on a clean host):** every SHA-256 verifies;
+> the demo's checks pass; the same query answers correctly inside an empty network namespace
+> (`unshare -rn`) — offline is measured, not claimed. Try without installing:
+> [live workbench](https://praxisweb.xyz/physis/workbench). Lineage: this repo is the public
+> release of the active engine (physis-next, private); [physis-core](https://github.com/ilPez00/physis-core)
+> is the open Apache-2.0 research crate; [physis-pro](https://github.com/ilPez00/physis-pro)
+> is the legacy 2025 engine. Full map: [profile](https://github.com/ilPez00/ilPez00).
 
 ## Three commands
 
@@ -556,7 +569,7 @@ installed copy: the zip runs in place; delete the folder to uninstall.
 
 The binaries here link more of the engine than the paid product does — the free tool is for a human at a terminal, the paid one is for an agent inside an editor. Same code path, different caller.
 
-Want the full engine source and the licensed cross-platform MCP server that calls these tools automatically from your editor? See [Physis Context MCP](https://github.com/ilPez00/physis-context-mcp) and [physis-next](https://github.com/ilPez00/physis-next).
+Want the full engine source and the licensed cross-platform MCP server that calls these tools automatically from your editor? See [Physis Context MCP](https://praxisweb.xyz/physis) (commercial; licensing via [contact](mailto:pezzingiovanniantonio@gmail.com)) and physis-next (private — this repo is its public release).
 
 ## Where this is going
 
@@ -610,3 +623,15 @@ See [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
 If this is useful, star the repository and run `physis demo` on a
 repository you know — the failing check, not the feature list, is the
 interesting part.
+
+
+## Verified 2026-11-21
+
+Fresh public checkout/release, run on a clean host (pansa, 12-core Linux):
+
+- Release `v1.8.7` archive + every bundled file: `sha256sum -c SHA256SUMS.txt` → all OK.
+- `physis demo`: stages 1–6 ran; stage-6 project checks PASS (change applied, behavior preserved, old path removed, public API unchanged, tests still cover target).
+- `physis q "how do I build a queue"`: answered with primitive citations.
+- Offline proof: same query under `unshare -rn` (no network) → answered, OFFLINE-OK.
+
+Method + full logs: portfolio audit verification log (private hub); reproduction commands in this README.
