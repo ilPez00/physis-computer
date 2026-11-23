@@ -4,6 +4,84 @@ All notable changes to **physis-computer** (the free, binary-only giveaway) are
 documented here. This file is staged into the public repository alongside the
 binaries; engine source is not — see the License section.
 
+## [1.9.1] — 2026-11-22
+
+The 1.9 line. This entry records the release; it summarizes a large merged
+window rather than cataloguing it — the authoritative change list is the
+engine's own change log, and this file only carries the giveaway packaging.
+
+### Merged in this window (branch themes since v1.9.0)
+- **Autonomy journal** and the dev-card work system (dispatch, gate path
+  check, stall watchdog, dirty-scope guard, integrator requires gate pass).
+- **`as-of` navigator** and **pinned replay control** — replay a world or a
+  decision at a chosen point, with the control arm recorded beside it.
+- **World simulator / predictive worldlab** and a **claims mode**.
+- **Genesis source baseline** and a cross-root scoped identity.
+- GUI viewspec lens, cite-symbols, live-row guard, MCP bind diagnostics.
+
+### Gaps recorded, not hidden
+- `[1.9.0]` has no entry in this file. It is recorded as a gap; it is **not**
+  backfilled with guessed content. Earlier archives remain immutable.
+- Detailed, user-facing release notes must be completed from the engine's
+  change log before this archive is published.
+
+## [1.8.8] — 2026-11-01
+
+The machine keeps a typed record of every run, and the desktop shows it.
+
+### Added
+- **Execution evidence as an object.** `physis trace list|show` prints one run
+  as a typed record — nested spans, timing, errors and the scores that measured
+  it — written by every `physis solve` and by `decide` when `sys1_trace_log` is
+  on. `physis fixture list|show|replay` lists the runs that did not succeed and
+  re-runs one to see whether the failure still reproduces. The MCP surface gains
+  `physis.trace`, `physis.fixture` and `physis.fixture.replay`: **85 tool
+  definitions, 83 advertised** (58 on the native tier, 40,679 bytes measured —
+  `docs/MCP_SURFACE.md`).
+- **A Traces tab** in the desktop, so the evidence is in the window and not only
+  in a terminal.
+- **Fleet cockpit and Architect tabs.** Fleet lists the configured aion nodes
+  with probe state and tasks; Architect answers from the interview corpus with a
+  visible budget, deterministically, without a model.
+- **A horizontal desktop shell.** A top tab bar, a collapsible sidebar, a
+  directory bar with recent trees, and a receipts drawer.
+- **The chatbox shows the assembled packet**, not only a token count: the bytes
+  the machine would hand an agent, with the budget that bounded them.
+- **Right-click where you are looking** — graph nodes and notebook cells get a
+  context menu (compile context, callers, jump to source, pin); notebook cells
+  drag-reorder; the graph takes pinch-zoom and swipe-pan.
+- **`physis compile --research`** raises the budget to 100k for exploration while
+  keeping the receipt.
+
+### Changed
+- Simple mode is five tabs (overview, search, context, notebook, editor); the
+  window carries 25 in advanced mode.
+- The graph caches its layout, so a redraw no longer re-runs the force
+  simulation; touch targets grew from 22 to 28 px; the hotkey map moved behind
+  `?`; the notebook is two columns instead of three.
+
+### Fixed
+- A write action prints its transaction id, undo reverses owned parents, and a
+  partial outcome is recorded as partial instead of being rounded to success;
+  filesystem actions bind to the pinned root.
+- The editor strip and status line name the scope of an edit (file or symbol),
+  so a symbol write cannot read as a whole-file replacement.
+
+### Verified
+- Re-measured against this archive: `physis q`, `physis demo`, `physis computer .`,
+  `physis quiz kubernetes`, `physis cheat --track rust` and
+  `physis-hud --snapshot` each print `0` network connects under
+  `strace -f -e trace=network`, and the archive carries no `.rs` file and no
+  engine source.
+
+### Not in this release
+- No macOS or ARM build: Linux x86_64 (GLIBC ≤ 2.39) and Windows x86_64 only.
+  The Windows executables are unsigned, and its terminal tab refuses with the
+  reason — a PTY is a POSIX thing.
+- The tokensave matched-task protocol returned a **loss** (the MCP arm used
+  88.7% more provider tokens than `read`/`grep`). It is published as a loss and
+  no token-savings claim ships.
+
 ## [1.8.7] — 2026-10-25
 
 An agent that can edit its own harness — under a gate that cannot break the

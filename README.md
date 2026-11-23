@@ -2,7 +2,9 @@
 
 **Compute against the world — offline. No account, no network, no model; it abstains rather than guesses.**
 
-**Linux x86_64 · version 1.8.7 · Apache-2.0 corpus**
+**Linux x86_64 · latest release 1.9.1 · Apache-2.0 corpus**
+
+> **[Download physis-computer 1.9.1](https://github.com/ilPez00/physis-next/releases/tag/v1.9.1)** — full GUI: `physis`, `physis-hud`, `physis-gui`, `physis-overlay`; glibc ≤ 2.35 (Ubuntu 22.04, Debian 12, RHEL 9+). The captures below are the 1.8.7 binaries; the surface they show is unchanged in 1.9.1.
 
 > Controlled English, Italian and formal propositions with conditional,
 > replay-checked inference. See [LANGUAGE.md](LANGUAGE.md) and the offline
@@ -21,7 +23,7 @@
 
 *The captioned walkthrough (56 s, the 1.8.7 release binary): observe, search,
 compile, the host joining the same world, the notebook, the editor, and the
-receipt that says what changed. `docs/demo/physis-gui-demo-1.8.7.mp4`. No cuts,
+receipt that says what changed. `docs/demo/physis-gui-demo-1.8.0.mp4`. No cuts,
 no synthetic frames — every pixel is the binary you download.*
 
 *33 seconds of the 1.8.7 release binary on a virtual display: the graph over a
@@ -517,8 +519,8 @@ On Linux x86_64 (64-bit):
 
 ```bash
 # 1. verify the release archive — every file, aborts on any mismatch
-tar -xzf physis-1.8.7-linux-x86_64.tar.gz
-cd physis-1.8.7-linux-x86_64
+tar -xzf physis-1.9.1-linux-x86_64.tar.gz
+cd physis-1.9.1-linux-x86_64
 sha256sum -c SHA256SUMS.txt
 ./install.sh                        # → ~/.local/bin (or: ./install.sh /usr/local/bin)
 
@@ -629,7 +631,7 @@ interesting part.
 
 Fresh public checkout/release, run on a clean host (pansa, 12-core Linux):
 
-- Release `v1.8.7` archive + every bundled file: `sha256sum -c SHA256SUMS.txt` → all OK.
+- Release `v1.9.1` archive + every bundled file: `sha256sum -c SHA256SUMS.txt` → all OK.
 - `physis demo`: stages 1–6 ran; stage-6 project checks PASS (change applied, behavior preserved, old path removed, public API unchanged, tests still cover target).
 - `physis q "how do I build a queue"`: answered with primitive citations.
 - Offline proof: same query under `unshare -rn` (no network) → answered, OFFLINE-OK.
